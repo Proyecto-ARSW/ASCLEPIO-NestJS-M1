@@ -1,0 +1,94 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Patient {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Doctor {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Appoinment {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Query {
+  hello: String!
+  users: [User!]!
+  user(id: Int!): User!
+  patients: [Patient!]!
+  patient(id: Int!): Patient!
+  doctors: [Doctor!]!
+  doctor(id: Int!): Doctor!
+  appoinments: [Appoinment!]!
+  appoinment(id: Int!): Appoinment!
+}
+
+type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
+  createPatient(createPatientInput: CreatePatientInput!): Patient!
+  updatePatient(updatePatientInput: UpdatePatientInput!): Patient!
+  removePatient(id: Int!): Patient!
+  createDoctor(createDoctorInput: CreateDoctorInput!): Doctor!
+  updateDoctor(updateDoctorInput: UpdateDoctorInput!): Doctor!
+  removeDoctor(id: Int!): Doctor!
+  createAppoinment(createAppoinmentInput: CreateAppoinmentInput!): Appoinment!
+  updateAppoinment(updateAppoinmentInput: UpdateAppoinmentInput!): Appoinment!
+  removeAppoinment(id: Int!): Appoinment!
+}
+
+input CreateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreatePatientInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdatePatientInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateDoctorInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateDoctorInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
+
+input CreateAppoinmentInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateAppoinmentInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
