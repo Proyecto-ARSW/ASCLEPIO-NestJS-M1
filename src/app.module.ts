@@ -9,7 +9,6 @@ import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-import { PrismaService } from './shared/prisma/prisma.service';
 
 
 
@@ -27,6 +26,6 @@ import { PrismaService } from './shared/prisma/prisma.service';
      AppoinmentsModule,
   ],
   controllers: [],
-  providers: [ PrismaService],
+  providers: [],
 })
 export class AppModule {}
