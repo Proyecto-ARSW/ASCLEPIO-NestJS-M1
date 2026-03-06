@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -28,7 +26,7 @@ import { PrismaService } from './shared/prisma/prisma.service';
      DoctorsModule,
      AppoinmentsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, PrismaService],
+  controllers: [],
+  providers: [ PrismaService],
 })
 export class AppModule {}

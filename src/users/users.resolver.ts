@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
@@ -8,33 +8,45 @@ import { UpdateUserInput } from './dto/update-user.input';
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Query(() => String)
-  hello() {
-    return "Hola GraphQL funciona, iniciemos el fucking proyecto";
+  @Mutation(() => User, {
+    description: 'Registra un nuevo usuario. Rol por defecto: PACIENTE',
+  })
+  createUser(@Args('input') input: CreateUserInput): Promise<User> {
+    return this.usersService.create(input);
   }
 
-  @Mutation(() => User)
-  createUser(@Args('createUserInput') createUserInput: CreateUserInput) {
-    return this.usersService.create(createUserInput);
-  }
-
-  @Query(() => String, { name: 'users' })
-  findAll() {
+  @Query(() => [User], {
+    name: 'users',
+    description: 'Retorna todos los usuarios activos',
+  })
+  findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
 
-  @Query(() => User, { name: 'user' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => User, {
+    name: 'user',
+    description: 'Busca un usuario por su ID',
+  })
+  findOne(
+    @Args('id', { type: () => ID, description: 'ID del usuario' }) id: string,
+  ): Promise<User> {
     return this.usersService.findOne(id);
   }
 
-  @Mutation(() => User)
-  updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
-    return this.usersService.update(updateUserInput.id, updateUserInput);
+  @Mutation(() => User, {
+    description: 'Actualiza nombre, apellido, teléfono o rol de un usuario',
+  })
+  updateUser(@Args('input') input: UpdateUserInput): Promise<User> {
+    return this.usersService.update(input.id, input);
   }
 
-  @Mutation(() => User)
-  removeUser(@Args('id', { type: () => Int }) id: number) {
+  @Mutation(() => User, {
+    description: 'Desactiva un usuario del sistema (soft delete)',
+  })
+  removeUser(
+    @Args('id', { type: () => ID, description: 'ID del usuario a desactivar' })
+    id: string,
+  ): Promise<User> {
     return this.usersService.remove(id);
   }
 }

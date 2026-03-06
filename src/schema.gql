@@ -2,19 +2,122 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+"""Usuario del sistema"""
 type User {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """Identificador único del usuario (UUID)"""
+  id: ID!
+
+  """Nombre del usuario"""
+  nombre: String!
+
+  """Apellido del usuario"""
+  apellido: String!
+
+  """Correo electrónico único"""
+  email: String!
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """Rol del usuario en el sistema"""
+  rol: RolUsuario!
+
+  """Indica si el usuario está activo"""
+  activo: Boolean!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
 }
+
+"""Roles disponibles para un usuario del sistema"""
+enum RolUsuario {
+  """Paciente (rol por defecto)"""
+  PACIENTE
+
+  """Médico registrado"""
+  MEDICO
+
+  """Administrador del sistema"""
+  ADMIN
+
+  """Recepcionista"""
+  RECEPCIONISTA
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
 
 type Patient {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """Identificador único del paciente (UUID)"""
+  id: ID!
+
+  """ID del usuario asociado al paciente"""
+  usuarioId: ID!
+
+  """Nombre del paciente"""
+  nombre: String!
+
+  """Apellido del paciente"""
+  apellido: String!
+
+  """Tipo de documento del paciente"""
+  tipo_de_documento: String!
+
+  """Numero de documento del paciente"""
+  numero_de_documento: String!
+
+  """Correo electrónico del paciente"""
+  email: String!
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """ID de la especialidad paciente"""
+  especialidadId: Int!
+
+  """Indica si el paciente está activo en el sistema"""
+  activo: Boolean!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
 }
 
+"""Representa un médico registrado en el sistema"""
 type Doctor {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """Identificador único del médico (UUID)"""
+  id: ID!
+
+  """ID del usuario asociado al médico"""
+  usuarioId: ID!
+
+  """Nombre del médico"""
+  nombre: String!
+
+  """Apellido del médico"""
+  apellido: String!
+
+  """Correo electrónico del médico"""
+  email: String!
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Número de registro médico único"""
+  numeroRegistro: String!
+
+  """Número o nombre del consultorio asignado"""
+  consultorio: String
+
+  """Indica si el médico está activo en el sistema"""
+  activo: Boolean!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
 }
 
 type Appoinment {
@@ -23,41 +126,120 @@ type Appoinment {
 }
 
 type Query {
-  hello: String!
-  users: String!
-  user(id: Int!): User!
+  """Retorna todos los usuarios activos"""
+  users: [User!]!
+
+  """Busca un usuario por su ID"""
+  user(
+    """ID del usuario"""
+    id: ID!
+  ): User!
   patients: [Patient!]!
   patient(id: Int!): Patient!
+
+  """Retorna todos los médicos activos"""
   doctors: [Doctor!]!
-  doctor(id: Int!): Doctor!
+
+  """Busca un médico por su ID"""
+  doctor(
+    """ID del médico"""
+    id: ID!
+  ): Doctor!
   appoinments: [Appoinment!]!
   appoinment(id: Int!): Appoinment!
 }
 
 type Mutation {
-  createUser(createUserInput: CreateUserInput!): User!
-  updateUser(updateUserInput: UpdateUserInput!): User!
-  removeUser(id: Int!): User!
+  """Registra un nuevo usuario. Rol por defecto: PACIENTE"""
+  createUser(input: CreateUserInput!): User!
+
+  """Actualiza nombre, apellido, teléfono o rol de un usuario"""
+  updateUser(input: UpdateUserInput!): User!
+
+  """Desactiva un usuario del sistema (soft delete)"""
+  removeUser(
+    """ID del usuario a desactivar"""
+    id: ID!
+  ): User!
   createPatient(createPatientInput: CreatePatientInput!): Patient!
   updatePatient(updatePatientInput: UpdatePatientInput!): Patient!
   removePatient(id: Int!): Patient!
-  createDoctor(createDoctorInput: CreateDoctorInput!): Doctor!
-  updateDoctor(updateDoctorInput: UpdateDoctorInput!): Doctor!
-  removeDoctor(id: Int!): Doctor!
+
+  """
+  Vincula un perfil de médico a un usuario existente (requiere usuarioId)
+  """
+  createDoctor(input: CreateDoctorInput!): Doctor!
+
+  """Actualiza los datos de un médico existente"""
+  updateDoctor(input: UpdateDoctorInput!): Doctor!
+
+  """Desactiva un médico del sistema (soft delete)"""
+  removeDoctor(
+    """ID del médico a desactivar"""
+    id: ID!
+  ): Doctor!
   createAppoinment(createAppoinmentInput: CreateAppoinmentInput!): Appoinment!
   updateAppoinment(updateAppoinmentInput: UpdateAppoinmentInput!): Appoinment!
   removeAppoinment(id: Int!): Appoinment!
 }
 
+"""Datos para registrar un nuevo usuario"""
 input CreateUserInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """Nombre del usuario"""
+  nombre: String!
+
+  """Apellido del usuario"""
+  apellido: String!
+
+  """Correo electrónico único"""
+  email: String!
+
+  """Contraseña del usuario"""
+  password: String!
+
+  """Teléfono de contacto (opcional)"""
+  telefono: String
+
+  """Rol del usuario. Por defecto: PACIENTE"""
+  rol: RolUsuario
+
+  """Datos del perfil médico. Requerido cuando rol es MEDICO"""
+  medicoData: CreateMedicoDataInput
 }
 
+"""Datos específicos del perfil de médico"""
+input CreateMedicoDataInput {
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Número de registro médico único"""
+  numeroRegistro: String!
+
+  """Número o nombre del consultorio (opcional)"""
+  consultorio: String
+}
+
+"""
+Datos para actualizar un usuario existente (email y password no son modificables aquí)
+"""
 input UpdateUserInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  """Nombre del usuario"""
+  nombre: String
+
+  """Apellido del usuario"""
+  apellido: String
+
+  """Teléfono de contacto (opcional)"""
+  telefono: String
+
+  """Rol del usuario. Por defecto: PACIENTE"""
+  rol: RolUsuario
+
+  """Datos del perfil médico. Requerido cuando rol es MEDICO"""
+  medicoData: CreateMedicoDataInput
+
+  """ID del usuario a actualizar"""
+  id: ID!
 }
 
 input CreatePatientInput {
@@ -71,15 +253,39 @@ input UpdatePatientInput {
   id: Int!
 }
 
+"""Datos requeridos para registrar un nuevo médico"""
 input CreateDoctorInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID del usuario al que se asociará el médico"""
+  usuarioId: ID!
+
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Número de registro médico único (máx. 50 caracteres)"""
+  numeroRegistro: String!
+
+  """Número o nombre del consultorio (opcional, máx. 20 caracteres)"""
+  consultorio: String
 }
 
+"""
+Datos para actualizar un médico existente. Todos los campos son opcionales excepto el ID
+"""
 input UpdateDoctorInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  """ID del usuario al que se asociará el médico"""
+  usuarioId: ID
+
+  """ID de la especialidad médica"""
+  especialidadId: Int
+
+  """Número de registro médico único (máx. 50 caracteres)"""
+  numeroRegistro: String
+
+  """Número o nombre del consultorio (opcional, máx. 20 caracteres)"""
+  consultorio: String
+
+  """Identificador único del médico a actualizar"""
+  id: ID!
 }
 
 input CreateAppoinmentInput {
