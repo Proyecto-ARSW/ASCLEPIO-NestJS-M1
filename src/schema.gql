@@ -24,7 +24,7 @@ type Appoinment {
 
 type Query {
   hello: String!
-  users: [User!]!
+  users: String!
   user(id: Int!): User!
   patients: [Patient!]!
   patient(id: Int!): Patient!
