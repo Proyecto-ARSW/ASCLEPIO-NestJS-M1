@@ -9,7 +9,9 @@ import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-
+import { MetricsModule } from './metrics/metrics.module';
+import { LoggerModule } from 'nestjs-pino';
+import { HealthModule } from './health/health.module';
 
 
 @Module({
@@ -24,6 +26,15 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
      PatientsModule,
      DoctorsModule,
      AppoinmentsModule,
+     MetricsModule,
+     LoggerModule.forRoot({
+      pinoHttp: {
+        transport: {
+          target: 'pino-pretty',
+        },
+      },
+    }),
+     HealthModule,
   ],
   controllers: [],
   providers: [],

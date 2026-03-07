@@ -49,6 +49,7 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+"""Representa un paciente registrado en el sistema"""
 type Patient {
   """Identificador único del paciente (UUID)"""
   id: ID!
@@ -62,23 +63,32 @@ type Patient {
   """Apellido del paciente"""
   apellido: String!
 
-  """Tipo de documento del paciente"""
-  tipo_de_documento: String!
-
-  """Numero de documento del paciente"""
-  numero_de_documento: String!
-
   """Correo electrónico del paciente"""
   email: String!
 
   """Teléfono de contacto"""
   telefono: String
 
-  """ID de la especialidad paciente"""
-  especialidadId: Int!
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
 
-  """Indica si el paciente está activo en el sistema"""
-  activo: Boolean!
+  """Tipo de sangre del paciente (ej. O+, A-)"""
+  tipoSangre: String
+
+  """Número de documento de identidad"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.)"""
+  tipoDocumento: String
+
+  """EPS o aseguradora del paciente"""
+  eps: String
+
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos del paciente"""
+  antecedentes: String
 
   """Fecha de creación del registro"""
   creadoEn: DateTime!
@@ -134,8 +144,15 @@ type Query {
     """ID del usuario"""
     id: ID!
   ): User!
+
+  """Retorna todos los pacientes registrados"""
   patients: [Patient!]!
-  patient(id: Int!): Patient!
+
+  """Busca un paciente por su ID"""
+  patient(
+    """ID del paciente"""
+    id: ID!
+  ): Patient!
 
   """Retorna todos los médicos activos"""
   doctors: [Doctor!]!
@@ -161,9 +178,18 @@ type Mutation {
     """ID del usuario a desactivar"""
     id: ID!
   ): User!
-  createPatient(createPatientInput: CreatePatientInput!): Patient!
-  updatePatient(updatePatientInput: UpdatePatientInput!): Patient!
-  removePatient(id: Int!): Patient!
+
+  """Vincula un perfil de paciente a un usuario existente"""
+  createPatient(input: CreatePatientInput!): Patient!
+
+  """Actualiza los datos de un paciente existente"""
+  updatePatient(input: UpdatePatientInput!): Patient!
+
+  """Elimina un paciente del sistema"""
+  removePatient(
+    """ID del paciente a eliminar"""
+    id: ID!
+  ): Patient!
 
   """
   Vincula un perfil de médico a un usuario existente (requiere usuarioId)
@@ -205,6 +231,9 @@ input CreateUserInput {
 
   """Datos del perfil médico. Requerido cuando rol es MEDICO"""
   medicoData: CreateMedicoDataInput
+
+  """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
+  pacienteData: CreatePacienteDataInput
 }
 
 """Datos específicos del perfil de médico"""
@@ -217,6 +246,30 @@ input CreateMedicoDataInput {
 
   """Número o nombre del consultorio (opcional)"""
   consultorio: String
+}
+
+"""Datos específicos del perfil de paciente"""
+input CreatePacienteDataInput {
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime!
+
+  """Tipo de sangre (ej. O+, A-, B+)"""
+  tipoSangre: String!
+
+  """Número de documento de identidad"""
+  numeroDocumento: String!
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String!
+
+  """EPS o aseguradora del paciente"""
+  eps: String
+
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes"""
+  antecedentes: String
 }
 
 """
@@ -238,19 +291,70 @@ input UpdateUserInput {
   """Datos del perfil médico. Requerido cuando rol es MEDICO"""
   medicoData: CreateMedicoDataInput
 
+  """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
+  pacienteData: CreatePacienteDataInput
+
   """ID del usuario a actualizar"""
   id: ID!
 }
 
+"""Datos requeridos para registrar un nuevo paciente"""
 input CreatePatientInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID del usuario al que se asociará el paciente"""
+  usuarioId: ID!
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Tipo de sangre del paciente (ej. O+, A-, B+)"""
+  tipoSangre: String
+
+  """Número de documento de identidad (máx. 20 caracteres)"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String
+
+  """EPS o aseguradora del paciente (máx. 100 caracteres)"""
+  eps: String
+
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes del paciente"""
+  antecedentes: String
 }
 
+"""
+Datos para actualizar un paciente existente. Todos los campos son opcionales excepto el ID
+"""
 input UpdatePatientInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  """ID del usuario al que se asociará el paciente"""
+  usuarioId: ID
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Tipo de sangre del paciente (ej. O+, A-, B+)"""
+  tipoSangre: String
+
+  """Número de documento de identidad (máx. 20 caracteres)"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String
+
+  """EPS o aseguradora del paciente (máx. 100 caracteres)"""
+  eps: String
+
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes del paciente"""
+  antecedentes: String
+
+  """Identificador único del paciente a actualizar"""
+  id: ID!
 }
 
 """Datos requeridos para registrar un nuevo médico"""
