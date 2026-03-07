@@ -1,8 +1,13 @@
+import { InputType, Field, ID, PartialType } from '@nestjs/graphql';
 import { CreatePatientInput } from './create-patient.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 
-@InputType()
+@InputType({
+  description:
+    'Datos para actualizar un paciente existente. Todos los campos son opcionales excepto el ID',
+})
 export class UpdatePatientInput extends PartialType(CreatePatientInput) {
-  @Field(() => Int)
-  id: number;
+  @Field(() => ID, {
+    description: 'Identificador único del paciente a actualizar',
+  })
+  id: string;
 }

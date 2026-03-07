@@ -70,13 +70,47 @@ export class UsersService {
       return this.mapToEntity(usuario);
     }
 
+    const rol = input.rol ?? RolUsuario.PACIENTE;
+
+    if (rol === RolUsuario.PACIENTE) {
+      const usuario = await this.prisma.$transaction(async (tx) => {
+        const nuevoUsuario = await tx.usuarios.create({
+          data: {
+            nombre: input.nombre,
+            apellido: input.apellido,
+            email: input.email,
+            password_hash: this.hashPassword(input.password),
+            rol: RolUsuario.PACIENTE,
+            telefono: input.telefono,
+          },
+        });
+
+        await tx.pacientes.create({
+          data: {
+            usuario_id: nuevoUsuario.id,
+            fecha_nacimiento: input.pacienteData?.fechaNacimiento,
+            tipo_sangre: input.pacienteData?.tipoSangre,
+            numero_documento: input.pacienteData?.numeroDocumento,
+            tipo_documento: input.pacienteData?.tipoDocumento ?? 'CC',
+            eps: input.pacienteData?.eps,
+            alergias: input.pacienteData?.alergias,
+            antecedentes: input.pacienteData?.antecedentes,
+          },
+        });
+
+        return nuevoUsuario;
+      });
+
+      return this.mapToEntity(usuario);
+    }
+
     const usuario = await this.prisma.usuarios.create({
       data: {
         nombre: input.nombre,
         apellido: input.apellido,
         email: input.email,
         password_hash: this.hashPassword(input.password),
-        rol: input.rol ?? RolUsuario.PACIENTE,
+        rol,
         telefono: input.telefono,
       },
     });

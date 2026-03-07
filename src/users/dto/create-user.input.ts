@@ -1,6 +1,7 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { RolUsuario } from '../enums/rol-usuario.enum';
 import { CreateMedicoDataInput } from './create-medico-data.input';
+import { CreatePacienteDataInput } from './create-paciente-data.input';
 
 @InputType({ description: 'Datos para registrar un nuevo usuario' })
 export class CreateUserInput {
@@ -30,4 +31,10 @@ export class CreateUserInput {
     description: 'Datos del perfil médico. Requerido cuando rol es MEDICO',
   })
   medicoData?: CreateMedicoDataInput;
+
+  @Field(() => CreatePacienteDataInput, {
+    nullable: true,
+    description: 'Datos del perfil de paciente. Opcional cuando rol es PACIENTE',
+  })
+  pacienteData?: CreatePacienteDataInput;
 }
