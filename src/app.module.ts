@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -11,7 +9,9 @@ import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
-
+import { MetricsModule } from './metrics/metrics.module';
+import { LoggerModule } from 'nestjs-pino';
+import { HealthModule } from './health/health.module';
 
 
 @Module({
@@ -26,8 +26,17 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
      PatientsModule,
      DoctorsModule,
      AppoinmentsModule,
+     MetricsModule,
+     LoggerModule.forRoot({
+      pinoHttp: {
+        transport: {
+          target: 'pino-pretty',
+        },
+      },
+    }),
+     HealthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

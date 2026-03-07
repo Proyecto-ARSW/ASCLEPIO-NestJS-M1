@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { DoctorsService } from './doctors.service';
 import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorInput } from './dto/create-doctor.input';
@@ -8,28 +8,46 @@ import { UpdateDoctorInput } from './dto/update-doctor.input';
 export class DoctorsResolver {
   constructor(private readonly doctorsService: DoctorsService) {}
 
-  @Mutation(() => Doctor)
-  createDoctor(@Args('createDoctorInput') createDoctorInput: CreateDoctorInput) {
-    return this.doctorsService.create(createDoctorInput);
+  @Mutation(() => Doctor, {
+    description:
+      'Vincula un perfil de médico a un usuario existente (requiere usuarioId)',
+  })
+  createDoctor(@Args('input') input: CreateDoctorInput): Promise<Doctor> {
+    return this.doctorsService.create(input);
   }
 
-  @Query(() => [Doctor], { name: 'doctors' })
-  findAll() {
+  @Mutation(() => Doctor, {
+    description: 'Actualiza los datos de un médico existente',
+  })
+  updateDoctor(@Args('input') input: UpdateDoctorInput): Promise<Doctor> {
+    return this.doctorsService.update(input.id, input);
+  }
+
+  @Mutation(() => Doctor, {
+    description: 'Desactiva un médico del sistema (soft delete)',
+  })
+  removeDoctor(
+    @Args('id', { type: () => ID, description: 'ID del médico a desactivar' })
+    id: string,
+  ): Promise<Doctor> {
+    return this.doctorsService.remove(id);
+  }
+
+  @Query(() => [Doctor], {
+    name: 'doctors',
+    description: 'Retorna todos los médicos activos',
+  })
+  findAll(): Promise<Doctor[]> {
     return this.doctorsService.findAll();
   }
 
-  @Query(() => Doctor, { name: 'doctor' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  @Query(() => Doctor, {
+    name: 'doctor',
+    description: 'Busca un médico por su ID',
+  })
+  findOne(
+    @Args('id', { type: () => ID, description: 'ID del médico' }) id: string,
+  ): Promise<Doctor> {
     return this.doctorsService.findOne(id);
-  }
-
-  @Mutation(() => Doctor)
-  updateDoctor(@Args('updateDoctorInput') updateDoctorInput: UpdateDoctorInput) {
-    return this.doctorsService.update(updateDoctorInput.id, updateDoctorInput);
-  }
-
-  @Mutation(() => Doctor)
-  removeDoctor(@Args('id', { type: () => Int }) id: number) {
-    return this.doctorsService.remove(id);
   }
 }

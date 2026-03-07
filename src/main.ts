@@ -1,21 +1,28 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
-import * as path from 'path';
-import { Logger } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const logger = new Logger(bootstrap.name);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  const envPath = path.join(process.cwd(), '.env');
-  if (!fs.existsSync(envPath)) {
-    throw new Error('ENV not found, please create a new .env');
-  }
-  const app = await NestFactory.create(AppModule);
+  app.useLogger(app.get(Logger));
+
+  app.enableCors();
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+  }));
+
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT');
-  await app.listen(port!);
-  logger.log(`API starts in port: ${port}`);
+  const port = configService.get<number>('PORT') ?? 3000;
+  app.enableShutdownHooks();
+
+  await app.listen(port);
+
+  app.get(Logger).log(`API running on :${port}`, 'Bootstrap');
 }
+
 bootstrap();
