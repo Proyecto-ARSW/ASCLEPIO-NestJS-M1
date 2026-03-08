@@ -62,6 +62,12 @@ importers:
       graphql:
         specifier: ^16.13.1
         version: 16.13.1
+      graphql-subscriptions:
+        specifier: ^3.0.0
+        version: 3.0.0(graphql@16.13.1)
+      graphql-ws:
+        specifier: ^6.0.7
+        version: 6.0.7(graphql@16.13.1)(ws@8.19.0)
       joi:
         specifier: ^18.0.2
         version: 18.0.2
@@ -2471,6 +2477,11 @@ packages:
 
   graphmatch@1.1.1:
     resolution: {integrity: sha512-5ykVn/EXM1hF0XCaWh05VbYvEiOL2lY1kBxZtaYsyvjp7cmWOU1XsAdfQBwClraEofXDT197lFbXOEVMHpvQOg==}
+
+  graphql-subscriptions@3.0.0:
+    resolution: {integrity: sha512-kZCdevgmzDjGAOqH7GlDmQXYAkuHoKpMlJrqF40HMPhUhM5ZWSFSxCwD/nSi6AkaijmMfsFhoJRGJ27UseCvRA==}
+    peerDependencies:
+      graphql: ^15.7.2 || ^16.0.0
 
   graphql-tag@2.12.6:
     resolution: {integrity: sha512-FdSNcu2QQcWnM2VNvSCCDCVS5PpPqpzgFT8+GXzqJuoDd0CBncxCY278u4mhRO7tMgo2JjgJA5aZ+nWSQ/Z+xg==}
@@ -6629,6 +6640,10 @@ snapshots:
   grammex@3.1.12: {}
 
   graphmatch@1.1.1: {}
+
+  graphql-subscriptions@3.0.0(graphql@16.13.1):
+    dependencies:
+      graphql: 16.13.1
 
   graphql-tag@2.12.6(graphql@16.13.1):
     dependencies:

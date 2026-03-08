@@ -130,9 +130,83 @@ type Doctor {
   creadoEn: DateTime!
 }
 
+"""Horario semanal disponible de un médico para recibir citas"""
+type DisponibilidadMedico {
+  id: Int!
+  medicoId: ID!
+
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Hora de inicio en formato HH:MM (ISO time)"""
+  horaInicio: DateTime!
+
+  """Hora de fin en formato HH:MM (ISO time)"""
+  horaFin: DateTime!
+
+  """Duración en minutos de cada cita en este bloque"""
+  duracionCita: Int!
+
+  """Si el bloque está activo y genera slots"""
+  activo: Boolean!
+}
+
 type Appoinment {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  id: ID!
+  pacienteId: ID!
+  medicoId: ID!
+  fechaHora: DateTime!
+  duracionMinutos: Int!
+  estado: EstadoCita!
+  motivo: String
+  notasMedico: String
+  reagendadaDe: ID
+  canceladaPor: ID
+  motivoCancelacion: String
+  creadoEn: DateTime!
+  actualizadoEn: DateTime!
+}
+
+"""Estado actual de una cita médica"""
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  POSPUESTA
+  COMPLETADA
+}
+
+type SlotDisponible {
+  fechaHora: DateTime!
+  duracionMinutos: Int!
+}
+
+type CitaEvento {
+  tipo: String!
+  cita: Appoinment!
+  mensaje: String
+  slotsDisponibles: [SlotDisponible!]
+  notificacionId: ID
+}
+
+"""Notificación persistente para un usuario del sistema"""
+type Notificacion {
+  id: ID!
+
+  """ID del usuario destinatario"""
+  usuarioId: ID!
+  titulo: String!
+  mensaje: String!
+
+  """Categoría de la notificación"""
+  tipo: String!
+
+  """Si el usuario ya la leyó"""
+  leida: Boolean!
+
+  """ID de la entidad referenciada (cita, turno, etc.)"""
+  referenciaId: ID
+  creadoEn: DateTime!
 }
 
 type Query {
@@ -144,6 +218,9 @@ type Query {
     """ID del usuario"""
     id: ID!
   ): User!
+  notificaciones(usuarioId: ID!): [Notificacion!]!
+  notificacionesSinLeer(usuarioId: ID!): [Notificacion!]!
+  conteoSinLeer(usuarioId: ID!): Int!
 
   """Retorna todos los pacientes registrados"""
   patients: [Patient!]!
@@ -162,8 +239,19 @@ type Query {
     """ID del médico"""
     id: ID!
   ): Doctor!
+
+  """
+  Retorna todos los bloques de disponibilidad de un médico, ordenados por día y hora
+  """
+  disponibilidadesByDoctor(medicoId: ID!): [DisponibilidadMedico!]!
+
+  """Busca un bloque de disponibilidad por su ID"""
+  disponibilidad(id: Int!): DisponibilidadMedico!
   appoinments: [Appoinment!]!
-  appoinment(id: Int!): Appoinment!
+  appoinment(id: ID!): Appoinment!
+  appoinmentsByDoctor(medicoId: ID!, fecha: DateTime): [Appoinment!]!
+  appoinmentsByPatient(pacienteId: ID!): [Appoinment!]!
+  availableSlots(medicoId: ID!, fecha: DateTime!): [SlotDisponible!]!
 }
 
 type Mutation {
@@ -178,6 +266,15 @@ type Mutation {
     """ID del usuario a desactivar"""
     id: ID!
   ): User!
+  createNotificacion(input: CreateNotificacionInput!): Notificacion!
+  marcarNotificacionLeida(id: ID!): Notificacion!
+
+  """Retorna el número de notificaciones marcadas como leídas"""
+  marcarTodasLeidas(usuarioId: ID!): Int!
+  eliminarNotificacion(id: ID!): Notificacion!
+
+  """Retorna el número de notificaciones eliminadas"""
+  limpiarNotificacionesLeidas(usuarioId: ID!): Int!
 
   """Vincula un perfil de paciente a un usuario existente"""
   createPatient(input: CreatePatientInput!): Patient!
@@ -204,9 +301,25 @@ type Mutation {
     """ID del médico a desactivar"""
     id: ID!
   ): Doctor!
-  createAppoinment(createAppoinmentInput: CreateAppoinmentInput!): Appoinment!
-  updateAppoinment(updateAppoinmentInput: UpdateAppoinmentInput!): Appoinment!
-  removeAppoinment(id: Int!): Appoinment!
+
+  """Crea un bloque de disponibilidad horaria para un médico"""
+  createDisponibilidad(input: CreateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Actualiza horarios o estado activo de un bloque de disponibilidad"""
+  updateDisponibilidad(input: UpdateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Elimina un bloque de disponibilidad del médico"""
+  removeDisponibilidad(id: Int!): DisponibilidadMedico!
+
+  """Desactiva todos los bloques de disponibilidad de un médico"""
+  deactivateAllDisponibilidades(medicoId: ID!): Int!
+  createAppoinment(input: CreateAppoinmentInput!): Appoinment!
+  updateAppoinment(input: UpdateAppoinmentInput!): Appoinment!
+  cancelAppoinment(input: CancelAppoinmentInput!): Appoinment!
+  postponeAppoinment(id: ID!, nuevaFechaHora: DateTime!, motivo: String): Appoinment!
+  extendCurrentAppoinment(input: ExtendAppoinmentInput!): Appoinment!
+  confirmSlotOffer(input: ConfirmSlotInput!): Appoinment!
+  rescheduleAppoinment(input: RescheduleAppoinmentInput!): Appoinment!
 }
 
 """Datos para registrar un nuevo usuario"""
@@ -251,16 +364,16 @@ input CreateMedicoDataInput {
 """Datos específicos del perfil de paciente"""
 input CreatePacienteDataInput {
   """Fecha de nacimiento del paciente"""
-  fechaNacimiento: DateTime!
+  fechaNacimiento: DateTime
 
   """Tipo de sangre (ej. O+, A-, B+)"""
-  tipoSangre: String!
+  tipoSangre: String
 
   """Número de documento de identidad"""
-  numeroDocumento: String!
+  numeroDocumento: String
 
   """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
-  tipoDocumento: String!
+  tipoDocumento: String
 
   """EPS o aseguradora del paciente"""
   eps: String
@@ -296,6 +409,14 @@ input UpdateUserInput {
 
   """ID del usuario a actualizar"""
   id: ID!
+}
+
+input CreateNotificacionInput {
+  usuarioId: ID!
+  titulo: String!
+  mensaje: String!
+  tipo: String! = "SISTEMA"
+  referenciaId: ID
 }
 
 """Datos requeridos para registrar un nuevo paciente"""
@@ -392,13 +513,78 @@ input UpdateDoctorInput {
   id: ID!
 }
 
+input CreateDisponibilidadInput {
+  """ID del médico"""
+  medicoId: ID!
+
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Hora de inicio del bloque (solo se usa la porción HH:MM)"""
+  horaInicio: DateTime!
+
+  """Hora de fin del bloque (solo se usa la porción HH:MM)"""
+  horaFin: DateTime!
+
+  """Duración de cada cita en minutos"""
+  duracionCita: Int! = 30
+}
+
+input UpdateDisponibilidadInput {
+  """ID del registro de disponibilidad"""
+  id: Int!
+  horaInicio: DateTime
+  horaFin: DateTime
+  duracionCita: Int
+  activo: Boolean
+}
+
 input CreateAppoinmentInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  pacienteId: ID!
+  medicoId: ID!
+
+  """Día de la semana: 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int
+
+  """
+  Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere diaSemana.
+  """
+  hora: String
+
+  """Fecha y hora exacta del slot ISO (prioridad sobre diaSemana/hora)"""
+  fechaHora: DateTime
+  motivo: String
 }
 
 input UpdateAppoinmentInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  id: ID!
+  notasMedico: String
+  motivo: String
+}
+
+input CancelAppoinmentInput {
+  id: ID!
+  canceladaPor: ID!
+  motivoCancelacion: String
+}
+
+input ExtendAppoinmentInput {
+  id: ID!
+  minutosAdicionales: Int!
+}
+
+input ConfirmSlotInput {
+  notificacionId: ID!
+  pacienteId: ID!
+}
+
+input RescheduleAppoinmentInput {
+  citaId: ID!
+  nuevaFechaHora: DateTime!
+}
+
+type Subscription {
+  nuevaNotificacion(usuarioId: ID!): Notificacion!
+  citaActualizada(medicoId: ID!): CitaEvento!
+  citaPacienteActualizada(pacienteId: ID!): CitaEvento!
 }
