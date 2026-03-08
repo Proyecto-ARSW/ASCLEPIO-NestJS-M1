@@ -12,16 +12,21 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { MetricsModule } from './metrics/metrics.module';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 
 @Module({
   imports: [ConfigModuleCustom, AuthModule, UsersModule,
+     NotificationsModule,
      GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       context: ({ req }) => ({ req }),
-      playground:false,
+      playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      subscriptions: {
+        'graphql-ws': true,
+      },
     }),
      PatientsModule,
      DoctorsModule,
