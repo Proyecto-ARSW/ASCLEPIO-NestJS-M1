@@ -5,6 +5,7 @@ export enum RolUsuario {
   MEDICO = 'MEDICO',
   ADMIN = 'ADMIN',
   RECEPCIONISTA = 'RECEPCIONISTA',
+  ENFERMERO = 'ENFERMERO',
 }
 
 registerEnumType(RolUsuario, {
@@ -14,6 +15,7 @@ registerEnumType(RolUsuario, {
     PACIENTE: { description: 'Paciente (rol por defecto)' },
     MEDICO: { description: 'Médico registrado' },
     ADMIN: { description: 'Administrador del sistema' },
-    RECEPCIONISTA: { description: 'Recepcionista' },
+    RECEPCIONISTA: { description: 'Recepcionista del hospital' },
+    ENFERMERO: { description: 'Enfermero registrado' },
   },
 });

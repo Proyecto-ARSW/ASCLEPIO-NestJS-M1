@@ -9,6 +9,8 @@ import * as Joi from 'joi';
       envFilePath: '.env',
       validationSchema: Joi.object({
         PORT: Joi.number().required(),
+        JWT_SECRET: Joi.string().required(),
+        JWT_EXPIRES_IN: Joi.string().default('8h'),
       }),
       validationOptions: {
         allowUnknown: true,

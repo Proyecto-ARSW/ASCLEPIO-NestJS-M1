@@ -36,7 +36,6 @@ export class PatientsService {
         tipo_documento: input.tipoDocumento ?? 'CC',
         eps: input.eps,
         alergias: input.alergias,
-        antecedentes: input.antecedentes,
       },
       include: includeUsuario,
     });
@@ -100,9 +99,6 @@ export class PatientsService {
         }),
         ...(input.eps !== undefined && { eps: input.eps }),
         ...(input.alergias !== undefined && { alergias: input.alergias }),
-        ...(input.antecedentes !== undefined && {
-          antecedentes: input.antecedentes,
-        }),
       },
       include: includeUsuario,
     });
@@ -130,7 +126,6 @@ export class PatientsService {
     tipo_documento: string | null;
     eps: string | null;
     alergias: string | null;
-    antecedentes: string | null;
     creado_en: Date;
     usuarios: {
       nombre: string;
@@ -152,7 +147,6 @@ export class PatientsService {
       tipoDocumento: record.tipo_documento ?? undefined,
       eps: record.eps ?? undefined,
       alergias: record.alergias ?? undefined,
-      antecedentes: record.antecedentes ?? undefined,
       creadoEn: record.creado_en,
     };
   }

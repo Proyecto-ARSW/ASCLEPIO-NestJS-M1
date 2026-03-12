@@ -1,7 +1,8 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "cjs"
 }
 
 datasource db {
@@ -56,9 +57,10 @@ model disponibilidad_medico {
 }
 
 model especialidades {
-  id          Int       @id @default(autoincrement())
-  nombre      String    @unique @db.VarChar(100)
+  id          Int          @id @default(autoincrement())
+  nombre      String       @unique @db.VarChar(100)
   descripcion String?
+  enfermeros  enfermeros[]
   medicos     medicos[]
   turnos      turnos[]
 }
@@ -143,20 +145,20 @@ model notificaciones {
 }
 
 model pacientes {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id       String             @db.Uuid
-  fecha_nacimiento DateTime?          @db.Date
-  tipo_sangre      String?            @db.VarChar(5)
-  numero_documento String?            @unique @db.VarChar(20)
-  tipo_documento   String?            @default("CC") @db.VarChar(20)
-  eps              String?            @db.VarChar(100)
-  alergias         String?
-  antecedentes     String?
-  creado_en        DateTime           @default(now()) @db.Timestamp(6)
-  citas            citas[]
-  historial_medico historial_medico[]
-  usuarios         usuarios           @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  turnos           turnos[]
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id               String                     @db.Uuid
+  fecha_nacimiento         DateTime?                  @db.Date
+  tipo_sangre              String?                    @db.VarChar(5)
+  numero_documento         String?                    @unique @db.VarChar(20)
+  tipo_documento           String?                    @default("CC") @db.VarChar(20)
+  eps                      String?                    @db.VarChar(100)
+  alergias                 String?
+  creado_en                DateTime                   @default(now()) @db.Timestamp(6)
+  citas                    citas[]
+  consentimientos_paciente consentimientos_paciente[]
+  historial_medico         historial_medico[]
+  usuarios                 usuarios                   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  turnos                   turnos[]
 }
 
 model recetas {
@@ -194,39 +196,133 @@ model turnos {
   paciente_id     String          @db.Uuid
   medico_id       String?         @db.Uuid
   especialidad_id Int?
+  hospital_id     Int?
   numero_turno    Int             @db.SmallInt
   tipo            tipo_turno      @default(NORMAL)
   estado          estado_turno    @default(EN_ESPERA)
-  posicion_cola   Int?            @db.SmallInt
+  posicion_cola   Int?
   llamado_en      DateTime?       @db.Timestamp(6)
   atendido_en     DateTime?       @db.Timestamp(6)
   fecha           DateTime        @default(dbgenerated("CURRENT_DATE")) @db.Date
   creado_en       DateTime        @default(now()) @db.Timestamp(6)
   especialidades  especialidades? @relation(fields: [especialidad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  hospitales      hospitales?     @relation(fields: [hospital_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   medicos         medicos?        @relation(fields: [medico_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pacientes       pacientes       @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([fecha, numero_turno, medico_id])
+  @@unique([fecha, numero_turno, medico_id], map: "idx_turnos_unique_con_medico", where: raw("(medico_id IS NOT NULL)"))
+  @@unique([fecha, numero_turno], map: "idx_turnos_unique_sin_medico", where: raw("(medico_id IS NULL)"))
   @@index([fecha, estado], map: "idx_turnos_fecha_estado")
   @@index([paciente_id], map: "idx_turnos_paciente")
+  @@index([hospital_id], map: "idx_turnos_hospital")
 }
 
 model usuarios {
-  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre         String           @db.VarChar(100)
-  apellido       String           @db.VarChar(100)
-  email          String           @unique @db.VarChar(150)
-  password_hash  String
-  rol            rol_usuario      @default(PACIENTE)
-  telefono       String?          @db.VarChar(20)
-  activo         Boolean          @default(true)
-  creado_en      DateTime         @default(now()) @db.Timestamp(6)
-  actualizado_en DateTime         @default(now()) @db.Timestamp(6)
-  citas          citas[]
-  medicos        medicos[]
-  notificaciones notificaciones[]
-  pacientes      pacientes[]
-  refresh_tokens refresh_tokens[]
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre           String             @db.VarChar(100)
+  apellido         String             @db.VarChar(100)
+  email            String             @unique @db.VarChar(150)
+  password_hash    String
+  rol              rol_usuario        @default(PACIENTE)
+  telefono         String?            @db.VarChar(20)
+  activo           Boolean            @default(true)
+  creado_en        DateTime           @default(now()) @db.Timestamp(6)
+  actualizado_en   DateTime           @default(now()) @db.Timestamp(6)
+  citas            citas[]
+  enfermeros       enfermeros[]
+  hospital_usuario hospital_usuario[]
+  medicos          medicos[]
+  notificaciones   notificaciones[]
+  pacientes        pacientes[]
+  refresh_tokens   refresh_tokens[]
+}
+
+model consentimientos_paciente {
+  id                      Int       @id @default(autoincrement())
+  paciente_id             String    @db.Uuid
+  tipo_consentimiento     String    @db.VarChar(100)
+  consentimiento_otorgado Boolean
+  fecha_consentimiento    DateTime  @default(now()) @db.Timestamp(6)
+  revocado                Boolean   @default(false)
+  fecha_revocacion        DateTime? @db.Timestamp(6)
+  documento_firmado       String?
+  pacientes               pacientes @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model disponibilidad_enfermero {
+  id           Int        @id @default(autoincrement())
+  enfermero_id String     @db.Uuid
+  dia_semana   Int        @db.SmallInt
+  hora_inicio  DateTime   @db.Time(6)
+  hora_fin     DateTime   @db.Time(6)
+  activo       Boolean    @default(true)
+  enfermeros   enfermeros @relation(fields: [enfermero_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([enfermero_id, dia_semana, hora_inicio])
+}
+
+model enfermeros {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id               String                     @db.Uuid
+  numero_registro          String                     @unique @db.VarChar(50)
+  nivel_formacion          Int
+  area_especializacion     Int
+  certificacion_triage     Boolean                    @default(false)
+  fecha_certificacion      DateTime?                  @db.Date
+  activo                   Boolean                    @default(true)
+  creado_en                DateTime                   @default(now()) @db.Timestamp(6)
+  disponibilidad_enfermero disponibilidad_enfermero[]
+  especialidades           especialidades             @relation(fields: [area_especializacion], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  formacion                formacion                  @relation(fields: [nivel_formacion], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuarios                 usuarios                   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([activo], map: "idx_enfermeros_activo")
+  @@index([certificacion_triage], map: "idx_enfermeros_certificacion")
+  @@index([usuario_id], map: "idx_enfermeros_usuario")
+}
+
+model formacion {
+  id          Int          @id @default(autoincrement())
+  nombre      String       @unique @db.VarChar(100)
+  descripcion String?
+  enfermeros  enfermeros[]
+}
+
+model hospital_usuario {
+  id                Int        @id @default(autoincrement())
+  hospital_id       Int
+  usuario_id        String     @db.Uuid
+  rol_en_hospital   String?    @db.VarChar(50)
+  fecha_vinculacion DateTime   @default(dbgenerated("CURRENT_DATE")) @db.Date
+  hospitales        hospitales @relation(fields: [hospital_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuarios          usuarios   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([hospital_id, usuario_id])
+  @@index([hospital_id], map: "idx_hospital_usuario_hospital")
+  @@index([usuario_id], map: "idx_hospital_usuario_usuario")
+}
+
+model hospitales {
+  id                  Int                @id @default(autoincrement())
+  nombre              String             @db.VarChar(150)
+  nit                 String?            @unique @db.VarChar(20)
+  departamento        String             @db.VarChar(50)
+  ciudad              String             @db.VarChar(50)
+  direccion           String             @db.VarChar(200)
+  telefono            String?            @db.VarChar(20)
+  email_contacto      String?            @db.VarChar(150)
+  tipo_institucion    String?            @db.VarChar(50)
+  capacidad_urgencias Int?
+  numero_consultorios Int?               @db.SmallInt
+  latitud             Decimal?           @db.Decimal(10, 8)
+  longitud            Decimal?           @db.Decimal(11, 8)
+  activo              Boolean            @default(true)
+  hospital_usuario    hospital_usuario[]
+  turnos              turnos[]
+
+  @@index([activo], map: "idx_hospitales_activo")
+  @@index([ciudad], map: "idx_hospitales_ciudad")
 }
 
 enum disponibilidad_medicamento {
@@ -255,6 +351,7 @@ enum rol_usuario {
   MEDICO
   ADMIN
   RECEPCIONISTA
+  ENFERMERO
 }
 
 enum tipo_turno {
