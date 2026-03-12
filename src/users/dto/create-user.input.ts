@@ -1,9 +1,19 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import { InputType, Field, Int } from '@nestjs/graphql';
+import {
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { RolUsuario } from '../enums/rol-usuario.enum';
 import { CreateMedicoDataInput } from './create-medico-data.input';
 import { CreatePacienteDataInput } from './create-paciente-data.input';
+import { CreateEnfermeroDataInput } from './create-enfermero-data.input';
 
 @InputType({ description: 'Datos para registrar un nuevo usuario' })
 export class CreateUserInput {
@@ -38,6 +48,15 @@ export class CreateUserInput {
   rol?: RolUsuario;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Field(() => Int, {
+    nullable: true,
+    description: 'ID del hospital al que se vincula el usuario. Recomendado.',
+  })
+  hospitalId?: number;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => CreateMedicoDataInput)
   @Field(() => CreateMedicoDataInput, {
@@ -54,4 +73,13 @@ export class CreateUserInput {
     description: 'Datos del perfil de paciente. Opcional cuando rol es PACIENTE',
   })
   pacienteData?: CreatePacienteDataInput;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateEnfermeroDataInput)
+  @Field(() => CreateEnfermeroDataInput, {
+    nullable: true,
+    description: 'Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO',
+  })
+  enfermeroData?: CreateEnfermeroDataInput;
 }

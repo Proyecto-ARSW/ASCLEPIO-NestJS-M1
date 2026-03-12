@@ -1,8 +1,24 @@
 import { Module } from '@nestjs/common';
+import { PubSub } from 'graphql-subscriptions';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { TurnService } from './turn.service';
-import { TurnGateway } from './turn.gateway';
+import { TurnResolver } from './turn.resolver';
 
 @Module({
-  providers: [TurnGateway, TurnService],
+  providers: [
+    TurnResolver,
+    TurnService,
+    PrismaService,
+    {
+      provide: 'TURN_PUBSUB',
+      useValue: new PubSub(),
+    },
+    NotificationsService,
+    {
+      provide: 'NOTIF_PUBSUB',
+      useValue: new PubSub(),
+    },
+  ],
 })
 export class TurnModule {}

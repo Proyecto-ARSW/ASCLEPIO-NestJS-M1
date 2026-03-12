@@ -18,6 +18,10 @@ import { CancelAppoinmentInput } from './dto/cancel-appoinment.input';
 import { ExtendAppoinmentInput } from './dto/extend-appoinment.input';
 import { ConfirmSlotInput } from './dto/confirm-slot.input';
 import { RescheduleAppoinmentInput } from './dto/reschedule-appoinment.input';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 
 @Resolver(() => Appoinment)
 export class AppoinmentsResolver {
@@ -28,26 +32,32 @@ export class AppoinmentsResolver {
 
   // ── QUERIES ──────────────────────────────────────────────────────────────────
 
+  /** Lista todas las citas del hospital del usuario autenticado (ADMIN/RECEPCIONISTA) */
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Query(() => [Appoinment], { name: 'appoinments' })
-  findAll(): Promise<Appoinment[]> {
-    return this.appoinmentsService.findAll();
+  findAll(@CurrentUser() user: JwtPayload): Promise<Appoinment[]> {
+    return this.appoinmentsService.findAll(user.hospitalId);
   }
 
+  @Auth()
   @Query(() => Appoinment, { name: 'appoinment' })
   findOne(@Args('id', { type: () => ID }) id: string): Promise<Appoinment> {
     return this.appoinmentsService.findOne(id);
   }
 
-  /** Citas de un médico, opcionalmente filtradas por fecha */
+  /** Citas de un médico, filtradas por el hospital del usuario autenticado */
+  @Auth()
   @Query(() => [Appoinment], { name: 'appoinmentsByDoctor' })
   findByDoctor(
+    @CurrentUser() user: JwtPayload,
     @Args('medicoId', { type: () => ID }) medicoId: string,
     @Args('fecha', { nullable: true }) fecha?: Date,
   ): Promise<Appoinment[]> {
-    return this.appoinmentsService.findByDoctor(medicoId, fecha);
+    return this.appoinmentsService.findByDoctor(medicoId, user.hospitalId!, fecha);
   }
 
-  /** Citas de un paciente */
+  /** Citas de un paciente — ve TODAS sin importar hospital */
+  @Auth()
   @Query(() => [Appoinment], { name: 'appoinmentsByPatient' })
   findByPatient(
     @Args('pacienteId', { type: () => ID }) pacienteId: string,
@@ -55,10 +65,8 @@ export class AppoinmentsResolver {
     return this.appoinmentsService.findByPatient(pacienteId);
   }
 
-  /**
-   * Slots libres de un médico en una fecha dada.
-   * El paciente usa esta query para seleccionar su horario antes de agendar.
-   */
+  /** Slots disponibles de un médico en una fecha */
+  @Auth()
   @Query(() => [SlotDisponible], { name: 'availableSlots' })
   availableSlots(
     @Args('medicoId', { type: () => ID }) medicoId: string,
@@ -69,37 +77,25 @@ export class AppoinmentsResolver {
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────────
 
-  /** Agendar una cita en un slot disponible */
+  @Auth()
   @Mutation(() => Appoinment)
-  createAppoinment(
-    @Args('input') input: CreateAppoinmentInput,
-  ): Promise<Appoinment> {
+  createAppoinment(@Args('input') input: CreateAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.create(input);
   }
 
-  /** Actualizar notas del médico o motivo de la cita */
+  @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Appoinment)
-  updateAppoinment(
-    @Args('input') input: UpdateAppoinmentInput,
-  ): Promise<Appoinment> {
+  updateAppoinment(@Args('input') input: UpdateAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.update(input.id, input);
   }
 
-  /**
-   * Cancelar una cita.
-   * Automáticamente notifica al siguiente paciente sobre el slot liberado.
-   */
+  @Auth()
   @Mutation(() => Appoinment)
-  cancelAppoinment(
-    @Args('input') input: CancelAppoinmentInput,
-  ): Promise<Appoinment> {
+  cancelAppoinment(@Args('input') input: CancelAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.cancel(input);
   }
 
-  /**
-   * Posponer una cita a una nueva fecha/hora.
-   * El slot original se ofrece al siguiente paciente en cola.
-   */
+  @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Appoinment)
   postponeAppoinment(
     @Args('id', { type: () => ID }) id: string,
@@ -109,68 +105,41 @@ export class AppoinmentsResolver {
     return this.appoinmentsService.postpone(id, nuevaFechaHora, motivo);
   }
 
-  /**
-   * El médico extiende la consulta actual N minutos.
-   * - Desplaza automáticamente las citas siguientes.
-   * - Las que no caben en el horario del día quedan POSPUESTAS
-   *   y el paciente recibe opciones de reagendamiento.
-   */
+  @Auth(RolUsuario.MEDICO)
   @Mutation(() => Appoinment)
-  extendCurrentAppoinment(
-    @Args('input') input: ExtendAppoinmentInput,
-  ): Promise<Appoinment> {
+  extendCurrentAppoinment(@Args('input') input: ExtendAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.extendCurrentAppointment(input);
   }
 
-  /**
-   * El paciente confirma que acepta el slot adelantado ofertado.
-   * Solo se acepta con la notificación original sin haber expirado.
-   */
+  @Auth(RolUsuario.PACIENTE)
   @Mutation(() => Appoinment)
-  confirmSlotOffer(
-    @Args('input') input: ConfirmSlotInput,
-  ): Promise<Appoinment> {
+  confirmSlotOffer(@Args('input') input: ConfirmSlotInput): Promise<Appoinment> {
     return this.appoinmentsService.confirmSlotOffer(input);
   }
 
-  /**
-   * El paciente elige su nuevo horario tras un reagendamiento obligatorio.
-   * Solo disponible cuando la cita está en estado POSPUESTA.
-   */
+  @Auth(RolUsuario.PACIENTE)
   @Mutation(() => Appoinment)
-  rescheduleAppoinment(
-    @Args('input') input: RescheduleAppoinmentInput,
-  ): Promise<Appoinment> {
+  rescheduleAppoinment(@Args('input') input: RescheduleAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.rescheduleAppointment(input);
   }
 
   // ── SUBSCRIPTIONS ────────────────────────────────────────────────────────────
 
   /**
-   * Canal del médico/recepcionista: emite cada vez que cualquier cita suya cambia.
-   * Suscribirse con el medicoId para recibir actualizaciones en tiempo real.
-   *
-   * Eventos: CREADA | CANCELADA | POSPUESTA | EXTENDIDA |
-   *          MOVIDA | REAGENDADO_REQUERIDO | REAGENDADA
+   * Canal del médico: emite cada vez que cualquier cita del médico cambia.
+   * Eventos: CREADA | CANCELADA | POSPUESTA | EXTENDIDA | MOVIDA | REAGENDADO_REQUERIDO | REAGENDADA
    */
   @Subscription(() => CitaEvento, { name: 'citaActualizada' })
-  citaActualizada(
-    @Args('medicoId', { type: () => ID }) medicoId: string,
-  ) {
+  citaActualizada(@Args('medicoId', { type: () => ID }) medicoId: string) {
     return this.pubSub.asyncIterableIterator(`CITA_MEDICO_${medicoId}`);
   }
 
   /**
    * Canal del paciente: emite cuando su cita cambia o recibe oferta de slot.
-   * Suscribirse con el pacienteId para recibir notificaciones en tiempo real.
-   *
-   * Eventos: CANCELADA | POSPUESTA | MOVIDA | SLOT_OFERTADO |
-   *          CONFIRMADA_SLOT | REAGENDADO_REQUERIDO | REAGENDADA
+   * Eventos: CANCELADA | POSPUESTA | MOVIDA | SLOT_OFERTADO | CONFIRMADA_SLOT | REAGENDADO_REQUERIDO | REAGENDADA
    */
   @Subscription(() => CitaEvento, { name: 'citaPacienteActualizada' })
-  citaPacienteActualizada(
-    @Args('pacienteId', { type: () => ID }) pacienteId: string,
-  ) {
+  citaPacienteActualizada(@Args('pacienteId', { type: () => ID }) pacienteId: string) {
     return this.pubSub.asyncIterableIterator(`CITA_PACIENTE_${pacienteId}`);
   }
 }

@@ -12,6 +12,10 @@ import { PubSub } from 'graphql-subscriptions';
 import { NotificationsService } from './notifications.service';
 import { Notificacion } from './entities/notification.entity';
 import { CreateNotificacionInput } from './dto/create-notification.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 
 @Resolver(() => Notificacion)
 export class NotificationsResolver {
@@ -22,44 +26,38 @@ export class NotificationsResolver {
 
   // ── QUERIES ──────────────────────────────────────────────────────────────────
 
-  /** Lista todas las notificaciones de un usuario (leídas y no leídas) */
+  /** Lista todas las notificaciones del usuario autenticado */
+  @Auth()
   @Query(() => [Notificacion], { name: 'notificaciones' })
-  findByUser(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ): Promise<Notificacion[]> {
-    return this.notificationsService.findByUser(usuarioId);
+  findByUser(@CurrentUser() user: JwtPayload): Promise<Notificacion[]> {
+    return this.notificationsService.findByUser(user.sub);
   }
 
-  /** Lista solo las notificaciones no leídas de un usuario */
+  /** Solo las no leídas del usuario autenticado */
+  @Auth()
   @Query(() => [Notificacion], { name: 'notificacionesSinLeer' })
-  findUnread(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ): Promise<Notificacion[]> {
-    return this.notificationsService.findUnread(usuarioId);
+  findUnread(@CurrentUser() user: JwtPayload): Promise<Notificacion[]> {
+    return this.notificationsService.findUnread(user.sub);
   }
 
-  /** Conteo de notificaciones no leídas (útil para el badge en UI) */
+  /** Conteo de no leídas (para badge en UI) */
+  @Auth()
   @Query(() => Int, { name: 'conteoSinLeer' })
-  countUnread(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ): Promise<number> {
-    return this.notificationsService.countUnread(usuarioId);
+  countUnread(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.notificationsService.countUnread(user.sub);
   }
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────────
 
-  /**
-   * Crear una notificación manual (ej. desde admin o sistema).
-   * Las notificaciones automáticas de citas las genera AppoinmentsService.
-   */
+  /** Crear notificación manual (admin o sistema) */
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Notificacion)
-  createNotificacion(
-    @Args('input') input: CreateNotificacionInput,
-  ): Promise<Notificacion> {
+  createNotificacion(@Args('input') input: CreateNotificacionInput): Promise<Notificacion> {
     return this.notificationsService.create(input);
   }
 
-  /** Marcar una notificación específica como leída */
+  /** Marcar una notificación propia como leída */
+  @Auth()
   @Mutation(() => Notificacion)
   marcarNotificacionLeida(
     @Args('id', { type: () => ID }) id: string,
@@ -67,17 +65,17 @@ export class NotificationsResolver {
     return this.notificationsService.markAsRead(id);
   }
 
-  /** Marcar todas las notificaciones de un usuario como leídas */
+  /** Marcar todas las notificaciones del usuario como leídas */
+  @Auth()
   @Mutation(() => Int, {
     description: 'Retorna el número de notificaciones marcadas como leídas',
   })
-  marcarTodasLeidas(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ): Promise<number> {
-    return this.notificationsService.markAllAsRead(usuarioId);
+  marcarTodasLeidas(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.notificationsService.markAllAsRead(user.sub);
   }
 
   /** Eliminar una notificación */
+  @Auth()
   @Mutation(() => Notificacion)
   eliminarNotificacion(
     @Args('id', { type: () => ID }) id: string,
@@ -85,27 +83,23 @@ export class NotificationsResolver {
     return this.notificationsService.remove(id);
   }
 
-  /** Eliminar todas las notificaciones ya leídas de un usuario */
+  /** Limpiar todas las notificaciones leídas del usuario */
+  @Auth()
   @Mutation(() => Int, {
     description: 'Retorna el número de notificaciones eliminadas',
   })
-  limpiarNotificacionesLeidas(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ): Promise<number> {
-    return this.notificationsService.removeAllRead(usuarioId);
+  limpiarNotificacionesLeidas(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.notificationsService.removeAllRead(user.sub);
   }
 
   // ── SUBSCRIPTION ─────────────────────────────────────────────────────────────
 
   /**
-   * Canal en tiempo real de nuevas notificaciones para un usuario.
-   * Se emite cada vez que se crea una notificación para ese usuarioId,
-   * ya sea por el sistema de citas, por un admin, o manualmente.
+   * Canal en tiempo real de nuevas notificaciones para el usuario autenticado.
+   * Emite automáticamente cuando el sistema crea una notificación para este usuario.
    */
   @Subscription(() => Notificacion, { name: 'nuevaNotificacion' })
-  nuevaNotificacion(
-    @Args('usuarioId', { type: () => ID }) usuarioId: string,
-  ) {
+  nuevaNotificacion(@Args('usuarioId', { type: () => ID }) usuarioId: string) {
     return this.pubSub.asyncIterableIterator(`NOTIF_${usuarioId}`);
   }
 }

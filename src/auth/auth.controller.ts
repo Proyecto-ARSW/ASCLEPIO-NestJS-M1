@@ -1,34 +1,57 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { SelectHospitalDto } from './dto/select-hospital.dto';
+import { JoinHospitalDto } from './dto/join-hospital.dto';
+import {
+  RegisterDocs,
+  LoginDocs,
+  SelectHospitalDocs,
+  JoinHospitalDocs,
+} from 'src/docs/auth.docs';
 
+@ApiTags('Autenticación')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('register')
+  @RegisterDocs()
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('login')
+  @LoginDocs()
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  @Post('select-hospital')
+  @ApiBearerAuth('JWT-preToken')
+  @SelectHospitalDocs()
+  @UseGuards(JwtAuthGuard)
+  selectHospital(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: SelectHospitalDto,
+  ) {
+    return this.authService.selectHospital(user, dto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  @Post('join-hospital')
+  @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth('JWT-preToken')
+  @JoinHospitalDocs()
+  @UseGuards(JwtAuthGuard)
+  joinHospital(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: JoinHospitalDto,
+  ) {
+    return this.authService.joinHospital(user, dto);
   }
 }
