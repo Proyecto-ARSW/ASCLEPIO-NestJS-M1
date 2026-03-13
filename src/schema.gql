@@ -695,15 +695,20 @@ input CreateAppoinmentInput {
   pacienteId: ID!
   medicoId: ID!
 
+  """
+  ID del bloque de disponibilidad del médico. Prioridad sobre diaSemana. Combinar con "hora" para elegir un horario exacto dentro del bloque.
+  """
+  disponibilidadId: Int
+
   """Día de la semana: 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
   diaSemana: Int
 
   """
-  Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere diaSemana.
+  Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere disponibilidadId o diaSemana.
   """
   hora: String
 
-  """Fecha y hora exacta del slot ISO (prioridad sobre diaSemana/hora)"""
+  """Fecha y hora exacta del slot ISO (máxima prioridad)"""
   fechaHora: DateTime
   motivo: String
 }
