@@ -56,17 +56,23 @@ export class AppoinmentsService {
     });
     if (!disponibilidad) return [];
 
-    const startOfDay = this.startOfDay(fecha);
-    const endOfDay = this.endOfDay(fecha);
-
     const citasExistentes = await this.prisma.citas.findMany({
       where: {
         medico_id: medicoId,
-        fecha_hora: { gte: startOfDay, lte: endOfDay },
+        fecha_hora: { gte: this.startOfDay(fecha), lte: this.endOfDay(fecha) },
         estado: { in: ['PENDIENTE', 'CONFIRMADA'] },
       },
     });
 
+    return this.computeSlots(fecha, disponibilidad, citasExistentes);
+  }
+
+  /** Cálculo puro de slots — sin queries. Reutilizable con datos pre-cargados. */
+  private computeSlots(
+    fecha: Date,
+    disponibilidad: { hora_inicio: Date; hora_fin: Date; duracion_cita: number },
+    citasExistentes: { fecha_hora: Date; duracion_minutos: number }[],
+  ): SlotDisponible[] {
     const duracion = disponibilidad.duracion_cita;
     const horaInicio = new Date(fecha);
     horaInicio.setHours(
@@ -95,9 +101,7 @@ export class AppoinmentsService {
         return c.fecha_hora < slotFin && citaFin > cursor;
       });
 
-      if (!ocupado) {
-        slots.push({ fechaHora: new Date(cursor), duracionMinutos: duracion });
-      }
+      if (!ocupado) slots.push({ fechaHora: new Date(cursor), duracionMinutos: duracion });
       cursor = new Date(cursor.getTime() + duracion * 60_000);
     }
 
@@ -107,13 +111,29 @@ export class AppoinmentsService {
   // ── CRUD BASE ────────────────────────────────────────────────────────────────
 
   async create(input: CreateAppoinmentInput): Promise<Appoinment> {
-    if (input.diaSemana === undefined && !input.fechaHora) {
-      throw new BadRequestException('Debes indicar "diaSemana" (0-6) o "fechaHora" (slot exacto ISO)');
+    if (input.disponibilidadId === undefined && input.diaSemana === undefined && !input.fechaHora) {
+      throw new BadRequestException(
+        'Debes indicar "disponibilidadId", "diaSemana" (0-6) o "fechaHora" (slot exacto ISO)',
+      );
+    }
+
+    const paciente = await this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } });
+    if (!paciente) {
+      throw new NotFoundException(`Paciente con ID ${input.pacienteId} no encontrado`);
+    }
+
+    const medico = await this.prisma.medicos.findUnique({ where: { id: input.medicoId } });
+    if (!medico) {
+      throw new NotFoundException(`Médico con ID ${input.medicoId} no encontrado`);
+    }
+    if (!medico.activo) {
+      throw new BadRequestException(`El médico con ID ${input.medicoId} no está activo`);
     }
 
     let fechaSlot: Date;
 
     if (input.fechaHora) {
+      // ── Opción 1: slot exacto por fecha/hora ISO ──────────────────────────────
       const slots = await this.getAvailableSlots(input.medicoId, input.fechaHora);
       const solicitado = new Date(input.fechaHora).getTime();
       const slotExacto = slots.find((s) => s.fechaHora.getTime() === solicitado);
@@ -121,7 +141,45 @@ export class AppoinmentsService {
         throw new ConflictException('El horario seleccionado no está disponible para este médico');
       }
       fechaSlot = input.fechaHora;
+    } else if (input.disponibilidadId !== undefined) {
+      // ── Opción 2: por ID de bloque de disponibilidad ──────────────────────────
+      const bloque = await this.prisma.disponibilidad_medico.findUnique({
+        where: { id: input.disponibilidadId },
+      });
+      if (!bloque) {
+        throw new NotFoundException(`Bloque de disponibilidad con ID ${input.disponibilidadId} no encontrado`);
+      }
+      if (!bloque.activo) {
+        throw new BadRequestException(`El bloque de disponibilidad ${input.disponibilidadId} no está activo`);
+      }
+      if (bloque.medico_id !== input.medicoId) {
+        throw new BadRequestException('El bloque de disponibilidad no pertenece al médico indicado');
+      }
+
+      const fechaDia = this.nextDateForDay(bloque.dia_semana);
+      const slots = await this.getAvailableSlots(input.medicoId, fechaDia);
+
+      if (slots.length === 0) {
+        throw new ConflictException('No hay slots disponibles en ese bloque de disponibilidad');
+      }
+
+      if (input.hora) {
+        const [h, m] = input.hora.split(':').map(Number);
+        const slotHora = slots.find(
+          (s) => s.fechaHora.getHours() === h && s.fechaHora.getMinutes() === m,
+        );
+        if (!slotHora) {
+          throw new ConflictException(
+            `El horario ${input.hora} no está disponible en ese bloque. ` +
+              `Slots libres: ${slots.map((s) => `${String(s.fechaHora.getHours()).padStart(2, '0')}:${String(s.fechaHora.getMinutes()).padStart(2, '0')}`).join(', ')}`,
+          );
+        }
+        fechaSlot = slotHora.fechaHora;
+      } else {
+        fechaSlot = slots[0].fechaHora;
+      }
     } else {
+      // ── Opción 3: por día de la semana ────────────────────────────────────────
       const fechaDia = this.nextDateForDay(input.diaSemana!);
       const slots = await this.getAvailableSlots(input.medicoId, fechaDia);
 
@@ -361,6 +419,14 @@ export class AppoinmentsService {
       orderBy: { fecha_hora: 'asc' },
     });
 
+    // Preload de pacientes: 1 query para todo el loop en lugar de 1 por iteración
+    const uniquePacienteIds = [...new Set(citasSiguientes.map((c) => c.paciente_id))];
+    const pacientesPreload = await this.prisma.pacientes.findMany({
+      where: { id: { in: uniquePacienteIds } },
+      select: { id: true, usuario_id: true },
+    });
+    const pacienteMap = new Map(pacientesPreload.map((p) => [p.id, p.usuario_id]));
+
     for (const sig of citasSiguientes) {
       const nuevaFecha = new Date(sig.fecha_hora.getTime() + input.minutosAdicionales * 60_000);
       const nuevaFin = new Date(nuevaFecha.getTime() + sig.duracion_minutos * 60_000);
@@ -374,7 +440,7 @@ export class AppoinmentsService {
         const slotsDisponibles = await this.getSlotsProximos(sig.medico_id, cita.fecha_hora);
 
         await this.notificationsService.create({
-          usuarioId: await this.getUsuarioIdPorPaciente(sig.paciente_id),
+          usuarioId: pacienteMap.get(sig.paciente_id) ?? (await this.getUsuarioIdPorPaciente(sig.paciente_id)),
           titulo: 'Reagendamiento requerido',
           mensaje:
             'Tu cita no pudo realizarse hoy por extensión de consultas anteriores. ' +
@@ -542,12 +608,47 @@ export class AppoinmentsService {
   }
 
   private async getSlotsProximos(medicoId: string, desde: Date): Promise<SlotDisponible[]> {
+    // 1 query: todas las disponibilidades del médico
+    const disponibilidades = await this.prisma.disponibilidad_medico.findMany({
+      where: { medico_id: medicoId, activo: true },
+    });
+    if (disponibilidades.length === 0) return [];
+
+    // Rango de 7 días a partir de mañana
+    const rangoInicio = new Date(desde);
+    rangoInicio.setDate(rangoInicio.getDate() + 1);
+    rangoInicio.setHours(0, 0, 0, 0);
+    const rangoFin = new Date(desde);
+    rangoFin.setDate(rangoFin.getDate() + 7);
+    rangoFin.setHours(23, 59, 59, 999);
+
+    // 1 query: todas las citas del rango completo
+    const citasRango = await this.prisma.citas.findMany({
+      where: {
+        medico_id: medicoId,
+        fecha_hora: { gte: rangoInicio, lte: rangoFin },
+        estado: { in: ['PENDIENTE', 'CONFIRMADA'] },
+      },
+    });
+
     const resultado: SlotDisponible[] = [];
     for (let i = 1; i <= 7 && resultado.length < 5; i++) {
       const fecha = new Date(desde);
       fecha.setDate(fecha.getDate() + i);
-      const slots = await this.getAvailableSlots(medicoId, fecha);
-      resultado.push(...slots.slice(0, 5 - resultado.length));
+      const diaSemana = fecha.getDay();
+
+      const disp = disponibilidades.filter((d) => d.dia_semana === diaSemana);
+      if (disp.length === 0) continue;
+
+      const inicioD = this.startOfDay(fecha);
+      const finD = this.endOfDay(fecha);
+      const citasDia = citasRango.filter((c) => c.fecha_hora >= inicioD && c.fecha_hora <= finD);
+
+      for (const bloque of disp) {
+        const slots = this.computeSlots(fecha, bloque, citasDia);
+        resultado.push(...slots.slice(0, 5 - resultado.length));
+        if (resultado.length >= 5) break;
+      }
     }
     return resultado;
   }
@@ -559,13 +660,15 @@ export class AppoinmentsService {
   }
 
   private async resolveUsuarioId(id: string): Promise<string> {
-    const usuario = await this.prisma.usuarios.findUnique({ where: { id } });
+    // 3 queries en paralelo en lugar de secuenciales
+    const [usuario, medico, paciente] = await Promise.all([
+      this.prisma.usuarios.findUnique({ where: { id }, select: { id: true } }),
+      this.prisma.medicos.findUnique({ where: { id }, select: { usuario_id: true } }),
+      this.prisma.pacientes.findUnique({ where: { id }, select: { usuario_id: true } }),
+    ]);
+
     if (usuario) return id;
-
-    const medico = await this.prisma.medicos.findUnique({ where: { id } });
     if (medico) return medico.usuario_id;
-
-    const paciente = await this.prisma.pacientes.findUnique({ where: { id } });
     if (paciente) return paciente.usuario_id;
 
     throw new BadRequestException(`El ID "${id}" no corresponde a ningún usuario, médico o paciente`);

@@ -6,6 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { Turno, EstadoTurno, TipoTurno } from './entities/turn.entity';
@@ -33,6 +34,25 @@ export class TurnService {
     const paciente = await this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } });
     if (!paciente) {
       throw new NotFoundException(`Paciente con ID ${input.pacienteId} no encontrado`);
+    }
+
+    if (input.medicoId) {
+      const medico = await this.prisma.medicos.findUnique({ where: { id: input.medicoId } });
+      if (!medico) {
+        throw new NotFoundException(`Médico con ID ${input.medicoId} no encontrado`);
+      }
+      if (!medico.activo) {
+        throw new BadRequestException(`El médico con ID ${input.medicoId} no está activo`);
+      }
+    }
+
+    if (input.especialidadId) {
+      const especialidad = await this.prisma.especialidades.findUnique({
+        where: { id: input.especialidadId },
+      });
+      if (!especialidad) {
+        throw new NotFoundException(`Especialidad con ID ${input.especialidadId} no encontrada`);
+      }
     }
 
     const hoy = this.today();
@@ -103,38 +123,33 @@ export class TurnService {
 
   async llamarSiguiente(hospitalId: number, medicoId?: string): Promise<Turno> {
     const hoy = this.today();
-    const whereBase: Record<string, unknown> = {
+    const whereBase = {
       hospital_id: hospitalId,
       fecha: hoy,
       estado: EstadoTurno.EN_ESPERA,
+      ...(medicoId && { medico_id: medicoId }),
     };
-    if (medicoId) whereBase.medico_id = medicoId;
 
-    // Prioridad: URGENTE > PRIORITARIO > NORMAL
-    const urgente = await this.prisma.turnos.findFirst({
-      where: { ...whereBase, tipo: TipoTurno.URGENTE },
-      orderBy: { numero_turno: 'asc' },
+    // 1 query: URGENTE > PRIORITARIO > NORMAL (desc alphabético N<P<U coincide con prioridad)
+    const turnoALlamar = await this.prisma.turnos.findFirst({
+      where: whereBase,
+      orderBy: [{ tipo: 'desc' }, { numero_turno: 'asc' }],
     });
-    const prioritario = await this.prisma.turnos.findFirst({
-      where: { ...whereBase, tipo: TipoTurno.PRIORITARIO },
-      orderBy: { numero_turno: 'asc' },
-    });
-    const normal = await this.prisma.turnos.findFirst({
-      where: { ...whereBase, tipo: TipoTurno.NORMAL },
-      orderBy: { numero_turno: 'asc' },
-    });
-
-    const turnoALlamar = urgente ?? prioritario ?? normal;
     if (!turnoALlamar) {
       throw new NotFoundException('No hay turnos en espera en este hospital');
     }
 
+    // Include paciente en el update para evitar findUnique extra
     const updated = await this.prisma.turnos.update({
       where: { id: turnoALlamar.id },
       data: { estado: EstadoTurno.EN_CONSULTA, llamado_en: new Date(), posicion_cola: 0 },
+      include: { pacientes: { select: { usuario_id: true } } },
     });
 
-    const entity = this.mapToEntity(updated);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pacienteIncluido = (updated as any).pacientes as { usuario_id: string } | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = this.mapToEntity(updated as any);
 
     await this.pubSub.publish(CANAL_TURNO_HOSPITAL(hospitalId), {
       turnoActualizado: {
@@ -144,9 +159,7 @@ export class TurnService {
       },
     });
 
-    const paciente = await this.prisma.pacientes.findUnique({
-      where: { id: turnoALlamar.paciente_id },
-    });
+    const paciente = pacienteIncluido;
     if (paciente) {
       await this.pubSub.publish(CANAL_TURNO_PACIENTE(turnoALlamar.paciente_id), {
         miTurnoActualizado: {
@@ -289,13 +302,21 @@ export class TurnService {
         ...(medicoId && { medico_id: medicoId }),
       },
       orderBy: [{ tipo: 'desc' }, { numero_turno: 'asc' }],
+      select: { id: true },
     });
 
-    await Promise.all(
-      turnos.map((t, i) =>
-        this.prisma.turnos.update({ where: { id: t.id }, data: { posicion_cola: i + 1 } }),
-      ),
+    if (turnos.length === 0) return;
+
+    // 1 raw SQL UPDATE en lugar de N updates individuales
+    const values = Prisma.join(
+      turnos.map((t, i) => Prisma.sql`(${t.id}::uuid, ${i + 1}::int)`),
     );
+    await this.prisma.$executeRaw`
+      UPDATE turnos AS t
+      SET posicion_cola = v.pos
+      FROM (VALUES ${values}) AS v(id uuid, pos int)
+      WHERE t.id = v.id
+    `;
   }
 
   private today(): Date {
