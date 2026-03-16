@@ -40,8 +40,11 @@ enum RolUsuario {
   """Administrador del sistema"""
   ADMIN
 
-  """Recepcionista"""
+  """Recepcionista del hospital"""
   RECEPCIONISTA
+
+  """Enfermero registrado"""
+  ENFERMERO
 }
 
 """
@@ -130,13 +133,168 @@ type Doctor {
   creadoEn: DateTime!
 }
 
+"""Horario semanal disponible de un médico para recibir citas"""
+type DisponibilidadMedico {
+  id: Int!
+  medicoId: ID!
+
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Hora de inicio en formato HH:MM (ISO time)"""
+  horaInicio: DateTime!
+
+  """Hora de fin en formato HH:MM (ISO time)"""
+  horaFin: DateTime!
+
+  """Duración en minutos de cada cita en este bloque"""
+  duracionCita: Int!
+
+  """Si el bloque está activo y genera slots"""
+  activo: Boolean!
+}
+
 type Appoinment {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  id: ID!
+  pacienteId: ID!
+  medicoId: ID!
+  fechaHora: DateTime!
+  duracionMinutos: Int!
+  estado: EstadoCita!
+  motivo: String
+  notasMedico: String
+  reagendadaDe: ID
+  canceladaPor: ID
+  motivoCancelacion: String
+  creadoEn: DateTime!
+  actualizadoEn: DateTime!
+}
+
+"""Estado actual de una cita médica"""
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  POSPUESTA
+  COMPLETADA
+}
+
+type SlotDisponible {
+  fechaHora: DateTime!
+  duracionMinutos: Int!
+}
+
+type CitaEvento {
+  tipo: String!
+  cita: Appoinment!
+  mensaje: String
+  slotsDisponibles: [SlotDisponible!]
+  notificacionId: ID
+}
+
+"""Notificación persistente para un usuario del sistema"""
+type Notificacion {
+  id: ID!
+
+  """ID del usuario destinatario"""
+  usuarioId: ID!
+  titulo: String!
+  mensaje: String!
+
+  """Categoría de la notificación"""
+  tipo: String!
+
+  """Si el usuario ya la leyó"""
+  leida: Boolean!
+
+  """ID de la entidad referenciada (cita, turno, etc.)"""
+  referenciaId: ID
+  creadoEn: DateTime!
+}
+
+"""Turno en la cola de atención de un hospital"""
+type Turno {
+  """Identificador único del turno (UUID)"""
+  id: ID!
+
+  """ID del paciente"""
+  pacienteId: ID!
+
+  """ID del médico asignado (opcional)"""
+  medicoId: ID
+
+  """ID de la especialidad requerida"""
+  especialidadId: Int
+
+  """ID del hospital donde se atiende el turno"""
+  hospitalId: Int
+
+  """Número de turno asignado en el día"""
+  numeroTurno: Int!
+
+  """Tipo/prioridad del turno"""
+  tipo: TipoTurno!
+
+  """Estado actual del turno"""
+  estado: EstadoTurno!
+
+  """Posición en la cola de espera"""
+  posicionCola: Int
+
+  """Fecha y hora en que fue llamado"""
+  llamadoEn: DateTime
+
+  """Fecha y hora en que fue atendido/completado"""
+  atendidoEn: DateTime
+
+  """Fecha del turno (solo fecha, sin hora)"""
+  fecha: DateTime!
+
+  """Fecha y hora de creación del registro"""
+  creadoEn: DateTime!
+}
+
+"""Prioridad del turno"""
+enum TipoTurno {
+  """Turno normal sin prioridad especial"""
+  NORMAL
+
+  """Turno con prioridad (adulto mayor, embarazada, etc.)"""
+  PRIORITARIO
+
+  """Turno urgente / emergencia"""
+  URGENTE
+}
+
+"""Estado del turno en la cola de atención"""
+enum EstadoTurno {
+  """Turno esperando ser llamado"""
+  EN_ESPERA
+
+  """Turno en atención activa"""
+  EN_CONSULTA
+
+  """Turno completado"""
+  ATENDIDO
+
+  """Turno cancelado"""
+  CANCELADO
+}
+
+"""Evento emitido por subscripción de turnos"""
+type TurnoEvento {
+  """Tipo de evento: CREADO | LLAMADO | EN_CONSULTA | ATENDIDO | CANCELADO"""
+  tipo: String!
+
+  """Turno afectado"""
+  turno: Turno!
+
+  """Mensaje adicional para mostrar al paciente"""
+  mensaje: String
 }
 
 type Query {
-  """Retorna todos los usuarios activos"""
+  """Retorna todos los usuarios activos. Requiere rol ADMIN."""
   users: [User!]!
 
   """Busca un usuario por su ID"""
@@ -144,6 +302,13 @@ type Query {
     """ID del usuario"""
     id: ID!
   ): User!
+  notificaciones: [Notificacion!]!
+  notificacionesSinLeer: [Notificacion!]!
+  conteoSinLeer: Int!
+  turnosPorHospital(fecha: DateTime, estado: EstadoTurno): [Turno!]!
+  turnosPorPaciente(pacienteId: ID!, fecha: DateTime): [Turno!]!
+  turno(id: ID!): Turno!
+  turnosEnEspera(medicoId: ID): Int!
 
   """Retorna todos los pacientes registrados"""
   patients: [Patient!]!
@@ -162,22 +327,56 @@ type Query {
     """ID del médico"""
     id: ID!
   ): Doctor!
+
+  """
+  Retorna todos los bloques de disponibilidad de un médico, ordenados por día y hora
+  """
+  disponibilidadesByDoctor(medicoId: ID!): [DisponibilidadMedico!]!
+
+  """Busca un bloque de disponibilidad por su ID"""
+  disponibilidad(id: Int!): DisponibilidadMedico!
   appoinments: [Appoinment!]!
-  appoinment(id: Int!): Appoinment!
+  appoinment(id: ID!): Appoinment!
+  appoinmentsByDoctor(medicoId: ID!, fecha: DateTime): [Appoinment!]!
+  appoinmentsByPatient(pacienteId: ID!): [Appoinment!]!
+  availableSlots(medicoId: ID!, fecha: DateTime!): [SlotDisponible!]!
 }
 
 type Mutation {
   """Registra un nuevo usuario. Rol por defecto: PACIENTE"""
   createUser(input: CreateUserInput!): User!
 
-  """Actualiza nombre, apellido, teléfono o rol de un usuario"""
+  """
+  Actualiza nombre, apellido, teléfono o rol de un usuario. Requiere rol ADMIN.
+  """
   updateUser(input: UpdateUserInput!): User!
 
-  """Desactiva un usuario del sistema (soft delete)"""
+  """Desactiva un usuario del sistema (soft delete). Requiere rol ADMIN."""
   removeUser(
     """ID del usuario a desactivar"""
     id: ID!
   ): User!
+  createNotificacion(input: CreateNotificacionInput!): Notificacion!
+  marcarNotificacionLeida(id: ID!): Notificacion!
+
+  """Retorna el número de notificaciones marcadas como leídas"""
+  marcarTodasLeidas: Int!
+  eliminarNotificacion(id: ID!): Notificacion!
+
+  """Retorna el número de notificaciones eliminadas"""
+  limpiarNotificacionesLeidas: Int!
+
+  """Registrar un nuevo turno en la cola del hospital"""
+  crearTurno(input: CreateTurnInput!): Turno!
+
+  """Llamar al siguiente turno en espera según prioridad"""
+  llamarSiguienteTurno(medicoId: ID): Turno!
+
+  """Marcar un turno como completado/atendido"""
+  atenderTurno(id: ID!): Turno!
+
+  """Cancelar un turno activo"""
+  cancelarTurno(id: ID!): Turno!
 
   """Vincula un perfil de paciente a un usuario existente"""
   createPatient(input: CreatePatientInput!): Patient!
@@ -204,9 +403,25 @@ type Mutation {
     """ID del médico a desactivar"""
     id: ID!
   ): Doctor!
-  createAppoinment(createAppoinmentInput: CreateAppoinmentInput!): Appoinment!
-  updateAppoinment(updateAppoinmentInput: UpdateAppoinmentInput!): Appoinment!
-  removeAppoinment(id: Int!): Appoinment!
+
+  """Crea un bloque de disponibilidad horaria para un médico"""
+  createDisponibilidad(input: CreateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Actualiza horarios o estado activo de un bloque de disponibilidad"""
+  updateDisponibilidad(input: UpdateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Elimina un bloque de disponibilidad del médico"""
+  removeDisponibilidad(id: Int!): DisponibilidadMedico!
+
+  """Desactiva todos los bloques de disponibilidad de un médico"""
+  deactivateAllDisponibilidades(medicoId: ID!): Int!
+  createAppoinment(input: CreateAppoinmentInput!): Appoinment!
+  updateAppoinment(input: UpdateAppoinmentInput!): Appoinment!
+  cancelAppoinment(input: CancelAppoinmentInput!): Appoinment!
+  postponeAppoinment(id: ID!, nuevaFechaHora: DateTime!, motivo: String): Appoinment!
+  extendCurrentAppoinment(input: ExtendAppoinmentInput!): Appoinment!
+  confirmSlotOffer(input: ConfirmSlotInput!): Appoinment!
+  rescheduleAppoinment(input: RescheduleAppoinmentInput!): Appoinment!
 }
 
 """Datos para registrar un nuevo usuario"""
@@ -229,11 +444,17 @@ input CreateUserInput {
   """Rol del usuario. Por defecto: PACIENTE"""
   rol: RolUsuario
 
+  """ID del hospital al que se vincula el usuario. Recomendado."""
+  hospitalId: Int
+
   """Datos del perfil médico. Requerido cuando rol es MEDICO"""
   medicoData: CreateMedicoDataInput
 
   """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
   pacienteData: CreatePacienteDataInput
+
+  """Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO"""
+  enfermeroData: CreateEnfermeroDataInput
 }
 
 """Datos específicos del perfil de médico"""
@@ -251,16 +472,16 @@ input CreateMedicoDataInput {
 """Datos específicos del perfil de paciente"""
 input CreatePacienteDataInput {
   """Fecha de nacimiento del paciente"""
-  fechaNacimiento: DateTime!
+  fechaNacimiento: DateTime
 
   """Tipo de sangre (ej. O+, A-, B+)"""
-  tipoSangre: String!
+  tipoSangre: String
 
   """Número de documento de identidad"""
-  numeroDocumento: String!
+  numeroDocumento: String
 
   """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
-  tipoDocumento: String!
+  tipoDocumento: String
 
   """EPS o aseguradora del paciente"""
   eps: String
@@ -270,6 +491,24 @@ input CreatePacienteDataInput {
 
   """Antecedentes médicos relevantes"""
   antecedentes: String
+}
+
+"""Datos específicos del perfil de enfermero"""
+input CreateEnfermeroDataInput {
+  """Número de registro profesional único del enfermero"""
+  numeroRegistro: String!
+
+  """ID del nivel de formación (FK a tabla formacion)"""
+  nivelFormacion: Int!
+
+  """ID del área de especialización (FK a especialidades). Opcional."""
+  areaEspecializacion: Int
+
+  """Indica si el enfermero tiene certificación de triage"""
+  certificacionTriage: Boolean = false
+
+  """Fecha de certificación de triage"""
+  fechaCertificacion: DateTime
 }
 
 """
@@ -288,14 +527,48 @@ input UpdateUserInput {
   """Rol del usuario. Por defecto: PACIENTE"""
   rol: RolUsuario
 
+  """ID del hospital al que se vincula el usuario. Recomendado."""
+  hospitalId: Int
+
   """Datos del perfil médico. Requerido cuando rol es MEDICO"""
   medicoData: CreateMedicoDataInput
 
   """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
   pacienteData: CreatePacienteDataInput
 
+  """Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO"""
+  enfermeroData: CreateEnfermeroDataInput
+
   """ID del usuario a actualizar"""
   id: ID!
+}
+
+input CreateNotificacionInput {
+  usuarioId: ID!
+  titulo: String!
+  mensaje: String!
+  tipo: String! = "SISTEMA"
+  referenciaId: ID
+}
+
+"""Datos para registrar un nuevo turno en la cola"""
+input CreateTurnInput {
+  """ID del paciente que solicita el turno"""
+  pacienteId: ID!
+
+  """ID del hospital donde se solicita el turno"""
+  hospitalId: Int!
+
+  """
+  ID del médico específico (opcional). Si no se provee, se asigna por especialidad.
+  """
+  medicoId: ID
+
+  """ID de la especialidad requerida (opcional)"""
+  especialidadId: Int
+
+  """Tipo de turno: NORMAL, PRIORITARIO o URGENTE. Por defecto: NORMAL."""
+  tipo: TipoTurno = NORMAL
 }
 
 """Datos requeridos para registrar un nuevo paciente"""
@@ -392,13 +665,93 @@ input UpdateDoctorInput {
   id: ID!
 }
 
+input CreateDisponibilidadInput {
+  """ID del médico"""
+  medicoId: ID!
+
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Hora de inicio del bloque (solo se usa la porción HH:MM)"""
+  horaInicio: DateTime!
+
+  """Hora de fin del bloque (solo se usa la porción HH:MM)"""
+  horaFin: DateTime!
+
+  """Duración de cada cita en minutos"""
+  duracionCita: Int! = 30
+}
+
+input UpdateDisponibilidadInput {
+  """ID del registro de disponibilidad"""
+  id: Int!
+  horaInicio: DateTime
+  horaFin: DateTime
+  duracionCita: Int
+  activo: Boolean
+}
+
 input CreateAppoinmentInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  pacienteId: ID!
+  medicoId: ID!
+
+  """
+  ID del bloque de disponibilidad del médico. Prioridad sobre diaSemana. Combinar con "hora" para elegir un horario exacto dentro del bloque.
+  """
+  disponibilidadId: Int
+
+  """Día de la semana: 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int
+
+  """
+  Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere disponibilidadId o diaSemana.
+  """
+  hora: String
+
+  """Fecha y hora exacta del slot ISO (máxima prioridad)"""
+  fechaHora: DateTime
+  motivo: String
 }
 
 input UpdateAppoinmentInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  id: ID!
+  notasMedico: String
+  motivo: String
+}
+
+input CancelAppoinmentInput {
+  id: ID!
+  canceladaPor: ID!
+  motivoCancelacion: String
+}
+
+input ExtendAppoinmentInput {
+  id: ID!
+  minutosAdicionales: Int!
+}
+
+input ConfirmSlotInput {
+  notificacionId: ID!
+  pacienteId: ID!
+}
+
+input RescheduleAppoinmentInput {
+  citaId: ID!
+  nuevaFechaHora: DateTime!
+}
+
+type Subscription {
+  nuevaNotificacion(usuarioId: ID!): Notificacion!
+
+  """
+  Recibe actualizaciones en tiempo real de todos los turnos del hospital indicado. Usar en pantallas de sala de espera y recepción.
+  """
+  turnoActualizado(hospitalId: Int!): TurnoEvento!
+
+  """
+  Canal personal del paciente. Recibe actualizaciones de su turno en tiempo real.
+  """
+  miTurnoActualizado(pacienteId: ID!): TurnoEvento!
+  citaActualizada(medicoId: ID!): CitaEvento!
+  citaPacienteActualizada(pacienteId: ID!): CitaEvento!
 }

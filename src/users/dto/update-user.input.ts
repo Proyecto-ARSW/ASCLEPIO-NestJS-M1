@@ -1,5 +1,6 @@
 import { CreateUserInput } from './create-user.input';
 import { InputType, Field, ID, PartialType, OmitType } from '@nestjs/graphql';
+import { IsUUID } from 'class-validator';
 
 @InputType({
   description:
@@ -8,6 +9,7 @@ import { InputType, Field, ID, PartialType, OmitType } from '@nestjs/graphql';
 export class UpdateUserInput extends PartialType(
   OmitType(CreateUserInput, ['password', 'email'] as const),
 ) {
+  @IsUUID()
   @Field(() => ID, { description: 'ID del usuario a actualizar' })
   id: string;
 }

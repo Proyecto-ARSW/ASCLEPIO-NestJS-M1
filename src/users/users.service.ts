@@ -16,27 +16,41 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateUserInput): Promise<User> {
-    if (input.rol === RolUsuario.MEDICO && !input.medicoData) {
+    const rol = input.rol ?? RolUsuario.PACIENTE;
+
+    if (rol === RolUsuario.MEDICO && !input.medicoData) {
       throw new BadRequestException(
         'Se requieren los datos del médico (medicoData) para crear un usuario con rol MEDICO',
+      );
+    }
+    if (rol === RolUsuario.ENFERMERO && !input.enfermeroData) {
+      throw new BadRequestException(
+        'Se requieren los datos del enfermero (enfermeroData) para crear un usuario con rol ENFERMERO',
+      );
+    }
+    if (
+      rol === RolUsuario.ENFERMERO &&
+      input.enfermeroData &&
+      !input.enfermeroData.areaEspecializacion
+    ) {
+      throw new BadRequestException(
+        'areaEspecializacion es requerida para el rol ENFERMERO (restricción de base de datos)',
       );
     }
 
     const existingEmail = await this.prisma.usuarios.findUnique({
       where: { email: input.email },
     });
-
     if (existingEmail) {
       throw new ConflictException(
         `Ya existe un usuario con el email "${input.email}"`,
       );
     }
 
-    if (input.rol === RolUsuario.MEDICO && input.medicoData) {
+    if (rol === RolUsuario.MEDICO && input.medicoData) {
       const existingRegistro = await this.prisma.medicos.findUnique({
         where: { numero_registro: input.medicoData.numeroRegistro },
       });
-
       if (existingRegistro) {
         throw new ConflictException(
           `Ya existe un médico con el número de registro "${input.medicoData.numeroRegistro}"`,
@@ -64,13 +78,70 @@ export class UsersService {
           },
         });
 
+        if (input.hospitalId) {
+          await tx.hospital_usuario.create({
+            data: {
+              hospital_id: input.hospitalId,
+              usuario_id: nuevoUsuario.id,
+              rol_en_hospital: RolUsuario.MEDICO,
+            },
+          });
+        }
+
         return nuevoUsuario;
       });
 
       return this.mapToEntity(usuario);
     }
 
-    const rol = input.rol ?? RolUsuario.PACIENTE;
+    if (rol === RolUsuario.ENFERMERO && input.enfermeroData) {
+      const existingRegistro = await this.prisma.enfermeros.findUnique({
+        where: { numero_registro: input.enfermeroData.numeroRegistro },
+      });
+      if (existingRegistro) {
+        throw new ConflictException(
+          `Ya existe un enfermero con el número de registro "${input.enfermeroData.numeroRegistro}"`,
+        );
+      }
+
+      const usuario = await this.prisma.$transaction(async (tx) => {
+        const nuevoUsuario = await tx.usuarios.create({
+          data: {
+            nombre: input.nombre,
+            apellido: input.apellido,
+            email: input.email,
+            password_hash: this.hashPassword(input.password),
+            rol: RolUsuario.ENFERMERO,
+            telefono: input.telefono,
+          },
+        });
+
+        await tx.enfermeros.create({
+          data: {
+            usuario_id: nuevoUsuario.id,
+            numero_registro: input.enfermeroData!.numeroRegistro,
+            nivel_formacion: input.enfermeroData!.nivelFormacion,
+            area_especializacion: input.enfermeroData!.areaEspecializacion!,
+            certificacion_triage: input.enfermeroData!.certificacionTriage ?? false,
+            fecha_certificacion: input.enfermeroData!.fechaCertificacion,
+          },
+        });
+
+        if (input.hospitalId) {
+          await tx.hospital_usuario.create({
+            data: {
+              hospital_id: input.hospitalId,
+              usuario_id: nuevoUsuario.id,
+              rol_en_hospital: RolUsuario.ENFERMERO,
+            },
+          });
+        }
+
+        return nuevoUsuario;
+      });
+
+      return this.mapToEntity(usuario);
+    }
 
     if (rol === RolUsuario.PACIENTE) {
       const usuario = await this.prisma.$transaction(async (tx) => {
@@ -94,9 +165,18 @@ export class UsersService {
             tipo_documento: input.pacienteData?.tipoDocumento ?? 'CC',
             eps: input.pacienteData?.eps,
             alergias: input.pacienteData?.alergias,
-            antecedentes: input.pacienteData?.antecedentes,
           },
         });
+
+        if (input.hospitalId) {
+          await tx.hospital_usuario.create({
+            data: {
+              hospital_id: input.hospitalId,
+              usuario_id: nuevoUsuario.id,
+              rol_en_hospital: RolUsuario.PACIENTE,
+            },
+          });
+        }
 
         return nuevoUsuario;
       });
@@ -104,15 +184,30 @@ export class UsersService {
       return this.mapToEntity(usuario);
     }
 
-    const usuario = await this.prisma.usuarios.create({
-      data: {
-        nombre: input.nombre,
-        apellido: input.apellido,
-        email: input.email,
-        password_hash: this.hashPassword(input.password),
-        rol,
-        telefono: input.telefono,
-      },
+    // ADMIN / RECEPCIONISTA — solo usuario base sin tabla propia
+    const usuario = await this.prisma.$transaction(async (tx) => {
+      const nuevoUsuario = await tx.usuarios.create({
+        data: {
+          nombre: input.nombre,
+          apellido: input.apellido,
+          email: input.email,
+          password_hash: this.hashPassword(input.password),
+          rol,
+          telefono: input.telefono,
+        },
+      });
+
+      if (input.hospitalId) {
+        await tx.hospital_usuario.create({
+          data: {
+            hospital_id: input.hospitalId,
+            usuario_id: nuevoUsuario.id,
+            rol_en_hospital: rol,
+          },
+        });
+      }
+
+      return nuevoUsuario;
     });
 
     return this.mapToEntity(usuario);
@@ -123,23 +218,23 @@ export class UsersService {
       where: { activo: true },
       orderBy: { creado_en: 'desc' },
     });
-
     return usuarios.map((u) => this.mapToEntity(u));
   }
 
   async findOne(id: string): Promise<User> {
     const usuario = await this.prisma.usuarios.findUnique({ where: { id } });
-
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID "${id}" no encontrado`);
     }
-
     return this.mapToEntity(usuario);
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.usuarios.findUnique({ where: { email } });
   }
 
   async update(id: string, input: UpdateUserInput): Promise<User> {
     await this.findOne(id);
-
     const updated = await this.prisma.usuarios.update({
       where: { id },
       data: {
@@ -149,18 +244,15 @@ export class UsersService {
         ...(input.rol && { rol: input.rol }),
       },
     });
-
     return this.mapToEntity(updated);
   }
 
   async remove(id: string): Promise<User> {
     await this.findOne(id);
-
     const deactivated = await this.prisma.usuarios.update({
       where: { id },
       data: { activo: false },
     });
-
     return this.mapToEntity(deactivated);
   }
 

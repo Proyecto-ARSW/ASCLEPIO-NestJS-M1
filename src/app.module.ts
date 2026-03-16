@@ -12,29 +12,40 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { MetricsModule } from './metrics/metrics.module';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
-
+import { NotificationsModule } from './notifications/notifications.module';
+import { TurnModule } from './turn/turn.module';
+import { HospitalsModule } from './hospitals/hospitals.module';
 
 @Module({
-  imports: [ConfigModuleCustom, AuthModule, UsersModule,
-     GraphQLModule.forRoot<ApolloDriverConfig>({
+  imports: [
+    ConfigModuleCustom,
+    AuthModule,
+    UsersModule,
+    NotificationsModule,
+    TurnModule,
+    HospitalsModule,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       context: ({ req }) => ({ req }),
-      playground:false,
+      playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      subscriptions: {
+        'graphql-ws': true,
+      },
     }),
-     PatientsModule,
-     DoctorsModule,
-     AppoinmentsModule,
-     MetricsModule,
-     LoggerModule.forRoot({
+    PatientsModule,
+    DoctorsModule,
+    AppoinmentsModule,
+    MetricsModule,
+    LoggerModule.forRoot({
       pinoHttp: {
         transport: {
           target: 'pino-pretty',
         },
       },
     }),
-     HealthModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [],
