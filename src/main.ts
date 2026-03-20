@@ -11,8 +11,6 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
-  app.enableCors();
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -28,6 +26,14 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
+  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+
+  app.enableCors({
+    origin: frontendUrl,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
   app.enableShutdownHooks();
 
   await app.listen(port);

@@ -15,6 +15,12 @@ import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TurnModule } from './turn/turn.module';
 import { HospitalsModule } from './hospitals/hospitals.module';
+import { NurseModule } from './nurse/nurse.module';
+import { MedicinesModule } from './medicines/medicines.module';
+import { InventarioModule } from './inventario/inventario.module';
+import { HistorialModule } from './historial/historial.module';
+import { RecetasModule } from './recetas/recetas.module';
+import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 
 @Module({
   imports: [
@@ -46,6 +52,12 @@ import { HospitalsModule } from './hospitals/hospitals.module';
       },
     }),
     HealthModule,
+    NurseModule,
+    MedicinesModule,
+    InventarioModule,
+    HistorialModule,
+    RecetasModule,
+    ConsentimientosModule,
   ],
   controllers: [],
   providers: [],

@@ -12,6 +12,7 @@ import * as Joi from 'joi';
         DATABASE_URL: Joi.string().uri().required(),
         JWT_SECRET: Joi.string().min(32).required(),
         JWT_EXPIRES_IN: Joi.string().default('8h'),
+        FRONTEND_URL: Joi.string().uri().default('http://localhost:5173'),
       }),
       validationOptions: {
         allowUnknown: true,
