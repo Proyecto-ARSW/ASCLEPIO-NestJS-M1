@@ -21,12 +21,14 @@ import { RegisterDto } from './dto/register.dto';
 import { SelectHospitalDto } from './dto/select-hospital.dto';
 import { JoinHospitalDto } from './dto/join-hospital.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly rabbitmqService: RabbitmqService,
   ) {}
 
   // ── REGISTRO ─────────────────────────────────────────────────────────────────
@@ -161,6 +163,11 @@ export class AuthService {
       apellido: usuario.apellido,
       ...(hospital && { hospitalId: hospital.id, hospitalNombre: hospital.nombre }),
     };
+
+    this.rabbitmqService.notifyUserRegistered(
+      usuario.email,
+      `${usuario.nombre} ${usuario.apellido}`,
+    );
 
     return {
       accessToken: this.jwtService.sign(payload),
