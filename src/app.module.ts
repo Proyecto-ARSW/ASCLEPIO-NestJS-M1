@@ -21,10 +21,12 @@ import { InventarioModule } from './inventario/inventario.module';
 import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
+import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 
 @Module({
   imports: [
     ConfigModuleCustom,
+    RabbitmqModule,
     AuthModule,
     UsersModule,
     NotificationsModule,

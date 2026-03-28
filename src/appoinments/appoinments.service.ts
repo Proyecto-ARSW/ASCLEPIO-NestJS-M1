@@ -8,6 +8,7 @@ import {
 import { PubSub } from 'graphql-subscriptions';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
 import { Appoinment } from './entities/appoinment.entity';
 import { SlotDisponible } from './entities/slot-disponible.entity';
 import { EstadoCita } from './entities/estado-cita.enum';
@@ -27,6 +28,7 @@ export class AppoinmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly rabbitmqService: RabbitmqService,
     @Inject('PUBSUB') private readonly pubSub: PubSub,
   ) {}
 
@@ -219,6 +221,8 @@ export class AppoinmentsService {
       citaActualizada: { tipo: 'CREADA', cita: entity },
     });
 
+    void this.rabbitmqService.notifyAppointmentCreated(cita.id);
+
     return entity;
   }
 
@@ -327,6 +331,8 @@ export class AppoinmentsService {
     });
 
     await this.ofrecerSlotLiberado(cita.medico_id, cita.fecha_hora, cita.duracion_minutos, cita.id);
+
+    void this.rabbitmqService.notifyAppointmentCancelled(input.id, input.motivoCancelacion ?? undefined);
 
     return entity;
   }
