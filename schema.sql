@@ -369,3 +369,33 @@ INSERT INTO formacion (nombre, descripcion) VALUES
 INSERT INTO sedes (nombre, direccion, ciudad) VALUES
 ('Sede Principal', 'Calle 1 # 2-3',      'Bogotá'),
 ('Sede Norte',     'Carrera 15 # 80-20', 'Bogotá');
+
+INSERT INTO hospitales (
+    nombre,
+    nit,
+    departamento,
+    ciudad,
+    direccion,
+    telefono,
+    email_contacto,
+    tipo_institucion,
+    capacidad_urgencias,
+    numero_consultorios,
+    latitud,
+    longitud,
+    activo
+) VALUES (
+    'Hospital Central de El Cerrito',
+    '900123456-7',
+    'Valle del Cauca',
+    'El Cerrito',
+    'Calle 5 #10-20',
+    '+57 3123456789',
+    'contacto@hospitalcerrito.com',
+    'Pública',
+    50,
+    20,
+    3.6851,
+    -76.3132,
+    TRUE
+);

@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+*.o
+*.a
+*.so
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+node_modules/
+
+# Test
+test/
+coverage/
+
+# IDE config
+.eslintrc
+.prettierrc
