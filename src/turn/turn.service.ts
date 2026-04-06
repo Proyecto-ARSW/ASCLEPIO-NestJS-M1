@@ -71,29 +71,50 @@ export class TurnService {
       );
     }
 
-    const ultimoTurno = await this.prisma.turnos.findFirst({
-      where: { hospital_id: input.hospitalId, fecha: hoy },
-      orderBy: { numero_turno: 'desc' },
-    });
-    const numeroTurno = (ultimoTurno?.numero_turno ?? 0) + 1;
+    let turno: Awaited<ReturnType<typeof this.prisma.turnos.create>> | null = null;
+    let numeroTurno = 0;
+    let posicionCola = 0;
 
-    const enEspera = await this.prisma.turnos.count({
-      where: { hospital_id: input.hospitalId, fecha: hoy, estado: EstadoTurno.EN_ESPERA },
-    });
-    const posicionCola = enEspera + 1;
+    // Reintento acotado para mitigar colisiones de numero_turno en alta concurrencia.
+    for (let intento = 0; intento < 3; intento++) {
+      const ultimoTurno = await this.prisma.turnos.findFirst({
+        where: { hospital_id: input.hospitalId, fecha: hoy },
+        orderBy: { numero_turno: 'desc' },
+      });
+      numeroTurno = (ultimoTurno?.numero_turno ?? 0) + 1;
 
-    const turno = await this.prisma.turnos.create({
-      data: {
-        paciente_id: input.pacienteId,
-        hospital_id: input.hospitalId,
-        medico_id: input.medicoId,
-        especialidad_id: input.especialidadId,
-        numero_turno: numeroTurno,
-        tipo: input.tipo ?? TipoTurno.NORMAL,
-        estado: EstadoTurno.EN_ESPERA,
-        posicion_cola: posicionCola,
-      },
-    });
+      const enEspera = await this.prisma.turnos.count({
+        where: { hospital_id: input.hospitalId, fecha: hoy, estado: EstadoTurno.EN_ESPERA },
+      });
+      posicionCola = enEspera + 1;
+
+      try {
+        turno = await this.prisma.turnos.create({
+          data: {
+            paciente_id: input.pacienteId,
+            hospital_id: input.hospitalId,
+            medico_id: input.medicoId,
+            especialidad_id: input.especialidadId,
+            numero_turno: numeroTurno,
+            tipo: input.tipo ?? TipoTurno.NORMAL,
+            estado: EstadoTurno.EN_ESPERA,
+            posicion_cola: posicionCola,
+          },
+        });
+        break;
+      } catch (error) {
+        if (this.isTurnNumberConflict(error) && intento < 2) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (!turno) {
+      throw new ConflictException(
+        'No se pudo asignar un número de turno en este momento. Intenta de nuevo.',
+      );
+    }
 
     const entity = this.mapToEntity(turno);
 
@@ -323,6 +344,24 @@ export class TurnService {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
+  }
+
+  private isTurnNumberConflict(error: unknown): boolean {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+      return false;
+    }
+
+    if (error.code !== 'P2002') {
+      return false;
+    }
+
+    const target = Array.isArray(error.meta?.target)
+      ? error.meta?.target.join(',')
+      : String(error.meta?.target ?? '');
+
+    return /idx_turnos_unique|turnos.*numero_turno|fecha.*numero_turno/i.test(
+      `${target} ${error.message}`,
+    );
   }
 
   private toDate(d: Date): Date {

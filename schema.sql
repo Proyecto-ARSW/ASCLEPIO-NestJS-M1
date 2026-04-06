@@ -193,11 +193,11 @@ CREATE TABLE turnos (
 
 -- Índices parciales para manejar correctamente NULLs en medico_id
 CREATE UNIQUE INDEX idx_turnos_unique_con_medico
-    ON turnos(fecha, numero_turno, medico_id)
+    ON turnos(hospital_id, fecha, numero_turno, medico_id)
     WHERE medico_id IS NOT NULL;
 
 CREATE UNIQUE INDEX idx_turnos_unique_sin_medico
-    ON turnos(fecha, numero_turno)
+    ON turnos(hospital_id, fecha, numero_turno)
     WHERE medico_id IS NULL;
 
 CREATE INDEX idx_turnos_fecha_estado ON turnos(fecha, estado);

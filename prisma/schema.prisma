@@ -210,8 +210,8 @@ model turnos {
   medicos         medicos?        @relation(fields: [medico_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pacientes       pacientes       @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([fecha, numero_turno, medico_id], map: "idx_turnos_unique_con_medico", where: raw("(medico_id IS NOT NULL)"))
-  @@unique([fecha, numero_turno], map: "idx_turnos_unique_sin_medico", where: raw("(medico_id IS NULL)"))
+  @@unique([hospital_id, fecha, numero_turno, medico_id], map: "idx_turnos_unique_con_medico", where: raw("(medico_id IS NOT NULL)"))
+  @@unique([hospital_id, fecha, numero_turno], map: "idx_turnos_unique_sin_medico", where: raw("(medico_id IS NULL)"))
   @@index([fecha, estado], map: "idx_turnos_fecha_estado")
   @@index([paciente_id], map: "idx_turnos_paciente")
   @@index([hospital_id], map: "idx_turnos_hospital")
