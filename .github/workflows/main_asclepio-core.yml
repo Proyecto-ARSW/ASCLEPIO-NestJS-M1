@@ -23,11 +23,20 @@ jobs:
         with:
           node-version: '24.x'
 
-      - name: npm install, build, and test
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies and build
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          # --frozen-lockfile: falla si pnpm-lock.yaml está desactualizado, garantiza builds reproducibles
+          pnpm install --frozen-lockfile
+          # pnpm run build ya ejecuta "npx prisma generate && nest build"
+          # prisma generate crea el cliente en node_modules/.prisma/client antes de compilar
+          pnpm run build
+          # prune --prod: elimina devDependencies (nest CLI, prisma CLI, TypeScript, Jest, etc.)
+          # El cliente de Prisma generado en node_modules/.prisma/client NO es un paquete
+          # manejado por pnpm, así que sobrevive el prune. @prisma/client sí está en dependencies.
+          pnpm prune --prod
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -62,4 +71,9 @@ jobs:
           app-name: 'asclepio-core'
           slot-name: 'Production'
           package: .
+          # startup-command le dice a Azure exactamente cómo arrancar el proceso.
+          # Sin esto, Azure intentaría "npm start" → "npx prisma generate && nest start",
+          # pero nest CLI fue removido por pnpm prune --prod y fallaría.
+          # "node dist/src/main" es seguro porque prisma generate ya corrió durante el build.
+          startup-command: 'node dist/src/main'
           
