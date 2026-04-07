@@ -75,5 +75,5 @@ jobs:
           # Sin esto, Azure intentaría "npm start" → "npx prisma generate && nest start",
           # pero nest CLI fue removido por pnpm prune --prod y fallaría.
           # "node dist/main" es seguro porque prisma generate ya corrió durante el build.
-          startup-command: 'node dist/src/main'
+          startup-command: 'npm install -g pnpm && pnpm install && pnpm start'
           
