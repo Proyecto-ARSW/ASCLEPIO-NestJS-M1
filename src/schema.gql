@@ -549,10 +549,10 @@ type Query {
   notificaciones: [Notificacion!]!
   notificacionesSinLeer: [Notificacion!]!
   conteoSinLeer: Int!
-  turnosPorHospital(fecha: DateTime, estado: EstadoTurno): [Turno!]!
+  turnosPorHospital(hospitalId: Int, fecha: DateTime, estado: EstadoTurno): [Turno!]!
   turnosPorPaciente(pacienteId: ID!, fecha: DateTime): [Turno!]!
   turno(id: ID!): Turno!
-  turnosEnEspera(medicoId: ID): Int!
+  turnosEnEspera(hospitalId: Int, medicoId: ID): Int!
 
   """Retorna todos los pacientes registrados"""
   patients: [Patient!]!
@@ -682,7 +682,7 @@ type Mutation {
   crearTurno(input: CreateTurnInput!): Turno!
 
   """Llamar al siguiente turno en espera según prioridad"""
-  llamarSiguienteTurno(medicoId: ID): Turno!
+  llamarSiguienteTurno(hospitalId: Int, medicoId: ID): Turno!
 
   """Marcar un turno como completado/atendido"""
   atenderTurno(id: ID!): Turno!

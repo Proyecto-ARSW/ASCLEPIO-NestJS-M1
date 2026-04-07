@@ -191,14 +191,12 @@ CREATE TABLE turnos (
     -- UNIQUE inline removido por comportamiento de NULLs en Postgres
 );
 
--- Índices parciales para manejar correctamente NULLs en medico_id
-CREATE UNIQUE INDEX idx_turnos_unique_con_medico
-    ON turnos(hospital_id, fecha, numero_turno, medico_id)
-    WHERE medico_id IS NOT NULL;
-
-CREATE UNIQUE INDEX idx_turnos_unique_sin_medico
+-- Unicidad real del número de turno por hospital y día
+CREATE UNIQUE INDEX idx_turnos_unique_hospital_fecha_numero
     ON turnos(hospital_id, fecha, numero_turno)
-    WHERE medico_id IS NULL;
+    WHERE hospital_id IS NOT NULL;
+
+CREATE INDEX idx_turnos_hospital_fecha_estado ON turnos(hospital_id, fecha, estado);
 
 CREATE INDEX idx_turnos_fecha_estado ON turnos(fecha, estado);
 CREATE INDEX idx_turnos_paciente     ON turnos(paciente_id);
