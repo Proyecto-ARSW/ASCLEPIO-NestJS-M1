@@ -15,9 +15,17 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
         useFactory: (config: ConfigService) => ({
           transport: Transport.RMQ,
           options: {
-            urls: [config.getOrThrow<string>('RABBITMQ_URL')],
+            // get() en lugar de getOrThrow(): si RABBITMQ_URL no está configurado en
+            // Azure App Settings, la app NO crashea — el módulo arranca en modo degradado
+            // y los eventos de notificación fallarán silenciosamente (warn en el log).
+            urls: [config.get<string>('RABBITMQ_URL') ?? 'amqp://localhost:5672'],
             queue: 'email.queue',
             queueOptions: { durable: true },
+            // socketOptions.reconnectTimeInSeconds: si RabbitMQ no está disponible al
+            // arrancar, NestJS reintenta la conexión en lugar de crashear.
+            socketOptions: {
+              reconnectTimeInSeconds: 10,
+            },
           },
         }),
       },
@@ -27,3 +35,5 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
   exports: [RabbitmqService],
 })
 export class RabbitmqModule {}
+
+// Daniel Useche
