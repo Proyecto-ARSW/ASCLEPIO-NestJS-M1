@@ -27,15 +27,17 @@ jobs:
         run: npm install -g pnpm
 
       - name: Install dependencies and build
+        env:
+          NODE_ENV: production
         run: |
           # --frozen-lockfile: falla si pnpm-lock.yaml está desactualizado, garantiza builds reproducibles
           pnpm install --frozen-lockfile
-          # pnpm run build ya ejecuta "npx prisma generate && nest build"
-          # prisma generate crea el cliente en node_modules/.prisma/client antes de compilar
+          # pnpm run build ejecuta "npx prisma generate && nest build"
+          # prisma generate crea el cliente en generated/prisma/ antes de compilar TypeScript
           pnpm run build
           # prune --prod: elimina devDependencies (nest CLI, prisma CLI, TypeScript, Jest, etc.)
-          # El cliente de Prisma generado en node_modules/.prisma/client NO es un paquete
-          # manejado por pnpm, así que sobrevive el prune. @prisma/client sí está en dependencies.
+          # Los archivos en generated/prisma/ son locales (no paquetes npm) y sobreviven el prune.
+          # @prisma/client está en dependencies y también sobrevive.
           pnpm prune --prod
 
       - name: Upload artifact for deployment job
@@ -71,5 +73,8 @@ jobs:
           app-name: 'asclepio-core'
           slot-name: 'Production'
           package: .
-          startup-command: 'node dist/src/main.js'
+          # NODE_ENV=production: activa JSON logs (sin pino-pretty), schema GraphQL
+          # en memoria, y cualquier optimización condicional de producción en la app.
+          # Azure App Service inyecta PORT automáticamente; la app usa ese valor.
+          startup-command: 'NODE_ENV=production node dist/src/main.js'
           
