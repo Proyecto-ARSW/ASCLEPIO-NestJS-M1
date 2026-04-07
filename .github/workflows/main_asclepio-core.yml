@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '24.x'
 
@@ -74,6 +74,6 @@ jobs:
           # startup-command le dice a Azure exactamente cómo arrancar el proceso.
           # Sin esto, Azure intentaría "npm start" → "npx prisma generate && nest start",
           # pero nest CLI fue removido por pnpm prune --prod y fallaría.
-          # "node dist/src/main" es seguro porque prisma generate ya corrió durante el build.
+          # "node dist/main" es seguro porque prisma generate ya corrió durante el build.
           startup-command: 'node dist/src/main'
           
