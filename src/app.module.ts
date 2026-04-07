@@ -34,7 +34,15 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      // En producción, autoSchemaFile:true mantiene el schema en memoria sin
+      // escribir al disco. Evita race conditions entre instancias y no depende
+      // de permisos de escritura en el directorio de despliegue de Azure.
+      // En desarrollo, escribe el archivo para que IDEs y herramientas lo lean.
+      autoSchemaFile:
+        process.env.NODE_ENV === 'production'
+          ? true
+          : join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
       context: ({ req }) => ({ req }),
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
@@ -48,9 +56,15 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     MetricsModule,
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: {
-          target: 'pino-pretty',
-        },
+        // pino-pretty solo en desarrollo: formatea logs de forma legible para el
+        // desarrollador. En producción se omite para emitir JSON estructurado puro,
+        // que Azure Monitor / Application Insights pueden ingestar directamente.
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty' }
+            : undefined,
+        // En producción, nivel info es suficiente. debug añade demasiado ruido.
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       },
     }),
     HealthModule,
