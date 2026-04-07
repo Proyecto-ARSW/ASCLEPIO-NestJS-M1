@@ -7,7 +7,7 @@ import {
   ID,
   Int,
 } from '@nestjs/graphql';
-import { Inject } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { TurnService, CANAL_TURNO_HOSPITAL, CANAL_TURNO_PACIENTE } from './turn.service';
 import { Turno, TurnoEvento, EstadoTurno } from './entities/turn.entity';
@@ -34,10 +34,11 @@ export class TurnResolver {
   @Query(() => [Turno], { name: 'turnosPorHospital' })
   findByHospital(
     @CurrentUser() user: JwtPayload,
+    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
     @Args('fecha', { nullable: true }) fecha?: Date,
     @Args('estado', { type: () => EstadoTurno, nullable: true }) estado?: EstadoTurno,
   ): Promise<Turno[]> {
-    return this.turnService.findByHospital(user.hospitalId!, fecha, estado);
+    return this.turnService.findByHospital(this.resolveHospitalId(user, hospitalId), fecha, estado);
   }
 
   /**
@@ -63,9 +64,10 @@ export class TurnResolver {
   @Query(() => Int, { name: 'turnosEnEspera' })
   contarEnEspera(
     @CurrentUser() user: JwtPayload,
+    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
     @Args('medicoId', { type: () => ID, nullable: true }) medicoId?: string,
   ): Promise<number> {
-    return this.turnService.contarEnEspera(user.hospitalId!, medicoId);
+    return this.turnService.contarEnEspera(this.resolveHospitalId(user, hospitalId), medicoId);
   }
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────────
@@ -87,9 +89,10 @@ export class TurnResolver {
   @Mutation(() => Turno, { description: 'Llamar al siguiente turno en espera según prioridad' })
   llamarSiguienteTurno(
     @CurrentUser() user: JwtPayload,
+    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
     @Args('medicoId', { type: () => ID, nullable: true }) medicoId?: string,
   ): Promise<Turno> {
-    return this.turnService.llamarSiguiente(user.hospitalId!, medicoId);
+    return this.turnService.llamarSiguiente(this.resolveHospitalId(user, hospitalId), medicoId);
   }
 
   /**
@@ -142,5 +145,26 @@ export class TurnResolver {
   })
   miTurnoActualizado(@Args('pacienteId', { type: () => ID }) pacienteId: string) {
     return this.pubSub.asyncIterableIterator(CANAL_TURNO_PACIENTE(pacienteId));
+  }
+
+  private resolveHospitalId(user: JwtPayload, hospitalIdArg?: number): number {
+    if (user.rol !== RolUsuario.ADMIN) {
+      if (!user.hospitalId) {
+        throw new ForbiddenException('El usuario autenticado no tiene hospital asignado');
+      }
+
+      if (hospitalIdArg && hospitalIdArg !== user.hospitalId) {
+        throw new ForbiddenException('No tienes permisos para operar sobre otro hospital');
+      }
+
+      return user.hospitalId;
+    }
+
+    const resolvedHospitalId = hospitalIdArg ?? user.hospitalId;
+    if (!resolvedHospitalId) {
+      throw new BadRequestException('Debes indicar un hospitalId para esta operación');
+    }
+
+    return resolvedHospitalId;
   }
 }
