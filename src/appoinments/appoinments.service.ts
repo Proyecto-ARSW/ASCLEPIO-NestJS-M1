@@ -286,16 +286,41 @@ export class AppoinmentsService {
   }
 
   async update(id: string, input: UpdateAppoinmentInput): Promise<Appoinment> {
-    await this.findOne(id);
+    const actual = await this.prisma.citas.findUnique({ where: { id } });
+    if (!actual) throw new NotFoundException(`Cita "${id}" no encontrada`);
+
+    if (actual.estado === EstadoCita.CANCELADA || actual.estado === EstadoCita.COMPLETADA) {
+      throw new BadRequestException(`No se puede actualizar una cita en estado ${actual.estado}`);
+    }
+
+    const marcarConfirmada = actual.estado === EstadoCita.PENDIENTE;
+
     const cita = await this.prisma.citas.update({
       where: { id },
       data: {
+        ...(marcarConfirmada && { estado: EstadoCita.CONFIRMADA }),
         ...(input.notasMedico !== undefined && { notas_medico: input.notasMedico }),
         ...(input.motivo !== undefined && { motivo: input.motivo }),
         actualizado_en: new Date(),
       },
     });
-    return this.mapToEntity(cita);
+
+    const entity = this.mapToEntity(cita);
+
+    if (marcarConfirmada) {
+      await this.pubSub.publish(CANAL_MEDICO(cita.medico_id), {
+        citaActualizada: { tipo: 'CONFIRMADA', cita: entity },
+      });
+      await this.pubSub.publish(CANAL_PACIENTE(cita.paciente_id), {
+        citaPacienteActualizada: {
+          tipo: 'CONFIRMADA',
+          cita: entity,
+          mensaje: 'Tu cita fue confirmada por el médico.',
+        },
+      });
+    }
+
+    return entity;
   }
 
   // ── CANCELACIÓN ──────────────────────────────────────────────────────────────

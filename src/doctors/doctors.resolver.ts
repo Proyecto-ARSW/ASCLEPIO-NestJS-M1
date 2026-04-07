@@ -1,8 +1,13 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorInput } from './dto/create-doctor.input';
 import { UpdateDoctorInput } from './dto/update-doctor.input';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 
 @Resolver(() => Doctor)
 export class DoctorsResolver {
@@ -33,12 +38,16 @@ export class DoctorsResolver {
     return this.doctorsService.remove(id);
   }
 
+  @Auth()
   @Query(() => [Doctor], {
     name: 'doctors',
     description: 'Retorna todos los médicos activos',
   })
-  findAll(): Promise<Doctor[]> {
-    return this.doctorsService.findAll();
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
+  ): Promise<Doctor[]> {
+    return this.doctorsService.findAll(this.resolveHospitalId(user, hospitalId));
   }
 
   @Query(() => Doctor, {
@@ -49,5 +58,24 @@ export class DoctorsResolver {
     @Args('id', { type: () => ID, description: 'ID del médico' }) id: string,
   ): Promise<Doctor> {
     return this.doctorsService.findOne(id);
+  }
+
+  private resolveHospitalId(user: JwtPayload, hospitalIdArg?: number): number | undefined {
+    if (hospitalIdArg !== undefined) {
+      if (user.rol !== RolUsuario.ADMIN && user.hospitalId !== hospitalIdArg) {
+        throw new ForbiddenException('No tienes permisos para consultar médicos de otro hospital');
+      }
+      return hospitalIdArg;
+    }
+
+    if (user.hospitalId !== undefined) {
+      return user.hospitalId;
+    }
+
+    if (user.rol === RolUsuario.ADMIN) {
+      return undefined;
+    }
+
+    throw new BadRequestException('El usuario autenticado no tiene hospital asignado');
   }
 }

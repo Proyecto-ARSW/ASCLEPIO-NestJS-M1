@@ -564,7 +564,7 @@ type Query {
   ): Patient!
 
   """Retorna todos los médicos activos"""
-  doctors: [Doctor!]!
+  doctors(hospitalId: Int): [Doctor!]!
 
   """Busca un médico por su ID"""
   doctor(

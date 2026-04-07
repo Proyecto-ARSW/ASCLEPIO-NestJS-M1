@@ -38,9 +38,16 @@ export class DoctorsService {
     return this.mapToEntity(doctor);
   }
 
-  async findAll(): Promise<Doctor[]> {
+  async findAll(hospitalId?: number): Promise<Doctor[]> {
     const doctors = await this.prisma.medicos.findMany({
-      where: { activo: true },
+      where: {
+        activo: true,
+        ...(hospitalId && {
+          usuarios: {
+            hospital_usuario: { some: { hospital_id: hospitalId } },
+          },
+        }),
+      },
       orderBy: { creado_en: 'desc' },
       include: includeUsuario,
     });
