@@ -77,7 +77,7 @@ export class AppoinmentsResolver {
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────────
 
-  @Auth()
+  @Auth(RolUsuario.PACIENTE,RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Appoinment)
   createAppoinment(@Args('input') input: CreateAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.create(input);
@@ -93,6 +93,13 @@ export class AppoinmentsResolver {
   @Mutation(() => Appoinment)
   cancelAppoinment(@Args('input') input: CancelAppoinmentInput): Promise<Appoinment> {
     return this.appoinmentsService.cancel(input);
+  }
+
+  /** Marca una cita como COMPLETADA (atendida). Usado por recepcionista para cierre administrativo. */
+  @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  @Mutation(() => Appoinment)
+  completeAppoinment(@Args('id', { type: () => ID }) id: string): Promise<Appoinment> {
+    return this.appoinmentsService.complete(id);
   }
 
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)

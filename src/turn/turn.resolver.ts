@@ -96,9 +96,10 @@ export class TurnResolver {
   }
 
   /**
-   * Marcar turno como atendido (completo). Solo MEDICO y ENFERMERO.
+   * Marcar turno como atendido (completo). MEDICO, ENFERMERO, RECEPCIONISTA y ADMIN.
+   * El recepcionista necesita cerrar turnos cuando el médico no está en el sistema.
    */
-  @Auth(RolUsuario.MEDICO, RolUsuario.ENFERMERO, RolUsuario.ADMIN)
+  @Auth(RolUsuario.MEDICO, RolUsuario.ENFERMERO, RolUsuario.RECEPCIONISTA, RolUsuario.ADMIN)
   @Mutation(() => Turno, { description: 'Marcar un turno como completado/atendido' })
   atenderTurno(@Args('id', { type: () => ID }) id: string): Promise<Turno> {
     return this.turnService.atender(id);

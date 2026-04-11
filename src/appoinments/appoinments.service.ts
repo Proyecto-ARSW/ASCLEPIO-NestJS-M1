@@ -337,6 +337,45 @@ export class AppoinmentsService {
     return entity;
   }
 
+  // ── COMPLETAR ────────────────────────────────────────────────────────────────
+
+  /**
+   * Marca una cita como COMPLETADA (atendida).
+   * El recepcionista puede usar esta acción cuando el médico ya atendió al paciente
+   * y solo necesita cerrar el registro administrativo desde su panel.
+   */
+  async complete(id: string): Promise<Appoinment> {
+    const cita = await this.prisma.citas.findUnique({ where: { id } });
+    if (!cita) throw new NotFoundException(`Cita "${id}" no encontrada`);
+    if (cita.estado === 'COMPLETADA') {
+      throw new BadRequestException('La cita ya está completada');
+    }
+    if (cita.estado === 'CANCELADA') {
+      throw new BadRequestException('No se puede completar una cita cancelada');
+    }
+
+    const updated = await this.prisma.citas.update({
+      where: { id },
+      data: { estado: 'COMPLETADA', actualizado_en: new Date() },
+    });
+
+    const entity = this.mapToEntity(updated);
+
+    // Notificar en tiempo real al médico y al paciente
+    await this.pubSub.publish(CANAL_MEDICO(cita.medico_id), {
+      citaActualizada: { tipo: 'COMPLETADA', cita: entity, mensaje: null },
+    });
+    await this.pubSub.publish(CANAL_PACIENTE(cita.paciente_id), {
+      citaPacienteActualizada: {
+        tipo: 'COMPLETADA',
+        cita: entity,
+        mensaje: 'Tu cita ha sido marcada como atendida',
+      },
+    });
+
+    return entity;
+  }
+
   // ── POSPONER ─────────────────────────────────────────────────────────────────
 
   async postpone(id: string, nuevaFechaHora: Date, motivo?: string): Promise<Appoinment> {

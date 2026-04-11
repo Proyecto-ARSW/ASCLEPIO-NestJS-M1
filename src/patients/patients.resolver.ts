@@ -4,6 +4,8 @@ import { Patient } from './entities/patient.entity';
 import { CreatePatientInput } from './dto/create-patient.input';
 import { UpdatePatientInput } from './dto/update-patient.input';
 import { Auth } from '../auth/decorators/auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RolUsuario } from '../users/enums/rol-usuario.enum';
 
 @Resolver(() => Patient)
@@ -77,6 +79,21 @@ export class PatientsResolver {
     @Args('id', { type: () => ID, description: 'ID del paciente' }) id: string,
   ): Promise<Patient> {
     return this.patientsService.findOne(id);
+  }
+
+  /**
+   * Devuelve el perfil de paciente del usuario autenticado.
+   * Al usar @CurrentUser() en vez de leer `patients {}` completo, el PACIENTE
+   * accede únicamente a su propio registro PHI — principio de mínimo privilegio.
+   */
+  @Auth()
+  @Query(() => Patient, {
+    name: 'myPatientProfile',
+    nullable: true,
+    description: 'Perfil de paciente del usuario autenticado, o null si no tiene perfil',
+  })
+  myPatientProfile(@CurrentUser() user: JwtPayload): Promise<Patient | null> {
+    return this.patientsService.findByUserId(user.sub);
   }
 }
 

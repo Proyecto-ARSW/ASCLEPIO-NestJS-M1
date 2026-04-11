@@ -78,6 +78,19 @@ export class PatientsService {
     return this.mapToEntity(patient);
   }
 
+  /**
+   * Devuelve el perfil de paciente vinculado al usuarioId dado, o null si no existe.
+   * Se usa en la query `myPatientProfile` para que el propio paciente acceda a su
+   * perfil sin necesitar acceso al listado completo (dato PHI de todos los pacientes).
+   */
+  async findByUserId(usuarioId: string): Promise<Patient | null> {
+    const patient = await this.prisma.pacientes.findFirst({
+      where: { usuario_id: usuarioId },
+      include: includeUsuario,
+    });
+    return patient ? this.mapToEntity(patient) : null;
+  }
+
   async update(id: string, input: UpdatePatientInput): Promise<Patient> {
     await this.findOne(id);
 
