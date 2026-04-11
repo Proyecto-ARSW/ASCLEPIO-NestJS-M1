@@ -59,7 +59,8 @@ export class CategoriaMedicamentoResolver {
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => CategoriaMedicamento, {
-    description: 'Elimina físicamente una categoría de medicamento (ADMIN). Falla si tiene medicamentos asociados.',
+    description:
+      'Elimina físicamente una categoría de medicamento (ADMIN). Falla si tiene medicamentos asociados.',
   })
   removeCategoriaMedicamento(
     @Args('id', { type: () => Int }) id: number,

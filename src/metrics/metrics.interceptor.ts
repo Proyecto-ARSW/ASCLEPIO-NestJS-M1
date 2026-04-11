@@ -9,6 +9,8 @@ import { tap } from 'rxjs/operators';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram, Counter } from 'prom-client';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import type { Request, Response } from 'express';
+import type { GraphQLResolveInfo } from 'graphql';
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
@@ -26,13 +28,13 @@ export class MetricsInterceptor implements NestInterceptor {
     private readonly gqlTotal: Counter<string>,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const isGraphQL = context.getType<string>() === 'graphql';
     const startTime = Date.now();
 
     if (isGraphQL) {
       const gqlCtx = GqlExecutionContext.create(context);
-      const info = gqlCtx.getInfo();
+      const info = gqlCtx.getInfo<GraphQLResolveInfo>();
       const operationName = info?.fieldName || 'unknown';
       const operationType = info?.parentType?.name || 'unknown';
 
@@ -41,46 +43,85 @@ export class MetricsInterceptor implements NestInterceptor {
           next: () => {
             const duration = (Date.now() - startTime) / 1000;
             this.gqlDuration.observe(
-              { operation: operationName, type: operationType, status: 'success' },
+              {
+                operation: operationName,
+                type: operationType,
+                status: 'success',
+              },
               duration,
             );
-            this.gqlTotal.inc({ operation: operationName, type: operationType, status: 'success' });
+            this.gqlTotal.inc({
+              operation: operationName,
+              type: operationType,
+              status: 'success',
+            });
           },
-          error: (err) => {
+          error: () => {
             const duration = (Date.now() - startTime) / 1000;
             this.gqlDuration.observe(
-              { operation: operationName, type: operationType, status: 'error' },
+              {
+                operation: operationName,
+                type: operationType,
+                status: 'error',
+              },
               duration,
             );
-            this.gqlTotal.inc({ operation: operationName, type: operationType, status: 'error' });
+            this.gqlTotal.inc({
+              operation: operationName,
+              type: operationType,
+              status: 'error',
+            });
           },
         }),
       );
     }
 
     // REST HTTP
-    const req = context.switchToHttp().getRequest();
+    const httpContext = context.switchToHttp();
+    const req = httpContext.getRequest<Request>();
+    const res = httpContext.getResponse<Response>();
     const method = req.method;
-    const route = req.route?.path || req.url;
+    const route = req.originalUrl || req.url || 'unknown';
 
     return next.handle().pipe(
       tap({
         next: () => {
-          const res = context.switchToHttp().getResponse();
           const duration = (Date.now() - startTime) / 1000;
           const statusCode = String(res.statusCode);
 
-          this.duration.observe({ method, route, status_code: statusCode }, duration);
+          this.duration.observe(
+            { method, route, status_code: statusCode },
+            duration,
+          );
           this.requestsTotal.inc({ method, route, status_code: statusCode });
         },
-        error: (err) => {
-          const statusCode = err.status ? String(err.status) : '500';
+        error: (error: unknown) => {
+          const statusCode = this.resolveErrorStatusCode(error);
           const duration = (Date.now() - startTime) / 1000;
 
-          this.duration.observe({ method, route, status_code: statusCode }, duration);
+          this.duration.observe(
+            { method, route, status_code: statusCode },
+            duration,
+          );
           this.requestsTotal.inc({ method, route, status_code: statusCode });
         },
       }),
     );
   }
+
+  private resolveErrorStatusCode(error: unknown): string {
+    if (typeof error === 'object' && error !== null) {
+      const maybeError = error as { status?: unknown; statusCode?: unknown };
+      if (typeof maybeError.status === 'number') {
+        return String(maybeError.status);
+      }
+      if (typeof maybeError.statusCode === 'number') {
+        return String(maybeError.statusCode);
+      }
+    }
+
+    return '500';
+  }
 }
+
+// Daniel Useche

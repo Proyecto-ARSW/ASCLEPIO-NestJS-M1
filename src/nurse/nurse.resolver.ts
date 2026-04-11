@@ -21,7 +21,8 @@ export class NurseResolver {
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => Nurse, {
-    description: 'Vincula un perfil de enfermero a un usuario existente (ADMIN)',
+    description:
+      'Vincula un perfil de enfermero a un usuario existente (ADMIN)',
   })
   createNurse(@Args('input') input: CreateNurseInput): Promise<Nurse> {
     return this.nurseService.create(input);
@@ -59,9 +60,7 @@ export class NurseResolver {
   @Mutation(() => Nurse, {
     description: 'Da de baja lógicamente a un enfermero (activo=false) (ADMIN)',
   })
-  removeNurse(
-    @Args('id', { type: () => ID }) id: string,
-  ): Promise<Nurse> {
+  removeNurse(@Args('id', { type: () => ID }) id: string): Promise<Nurse> {
     return this.nurseService.remove(id);
   }
 }

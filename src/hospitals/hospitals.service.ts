@@ -17,7 +17,9 @@ export class HospitalsService {
         where: { nit: dto.nit },
       });
       if (existing) {
-        throw new ConflictException(`Ya existe un hospital con NIT "${dto.nit}"`);
+        throw new ConflictException(
+          `Ya existe un hospital con NIT "${dto.nit}"`,
+        );
       }
     }
 
@@ -99,7 +101,9 @@ export class HospitalsService {
         where: { nit: dto.nit, NOT: { id } },
       });
       if (conflict) {
-        throw new ConflictException(`El NIT "${dto.nit}" ya está en uso por otro hospital`);
+        throw new ConflictException(
+          `El NIT "${dto.nit}" ya está en uso por otro hospital`,
+        );
       }
     }
 
@@ -108,14 +112,24 @@ export class HospitalsService {
       data: {
         ...(dto.nombre !== undefined && { nombre: dto.nombre }),
         ...(dto.nit !== undefined && { nit: dto.nit }),
-        ...(dto.departamento !== undefined && { departamento: dto.departamento }),
+        ...(dto.departamento !== undefined && {
+          departamento: dto.departamento,
+        }),
         ...(dto.ciudad !== undefined && { ciudad: dto.ciudad }),
         ...(dto.direccion !== undefined && { direccion: dto.direccion }),
         ...(dto.telefono !== undefined && { telefono: dto.telefono }),
-        ...(dto.emailContacto !== undefined && { email_contacto: dto.emailContacto }),
-        ...(dto.tipoInstitucion !== undefined && { tipo_institucion: dto.tipoInstitucion }),
-        ...(dto.capacidadUrgencias !== undefined && { capacidad_urgencias: dto.capacidadUrgencias }),
-        ...(dto.numeroConsultorios !== undefined && { numero_consultorios: dto.numeroConsultorios }),
+        ...(dto.emailContacto !== undefined && {
+          email_contacto: dto.emailContacto,
+        }),
+        ...(dto.tipoInstitucion !== undefined && {
+          tipo_institucion: dto.tipoInstitucion,
+        }),
+        ...(dto.capacidadUrgencias !== undefined && {
+          capacidad_urgencias: dto.capacidadUrgencias,
+        }),
+        ...(dto.numeroConsultorios !== undefined && {
+          numero_consultorios: dto.numeroConsultorios,
+        }),
         ...(dto.latitud !== undefined && { latitud: dto.latitud }),
         ...(dto.longitud !== undefined && { longitud: dto.longitud }),
         ...(dto.activo !== undefined && { activo: dto.activo }),

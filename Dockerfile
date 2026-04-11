@@ -5,57 +5,54 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# CI=true evita que pnpm pida confirmación interactiva al limpiar node_modules
+ENV CI=true
 
-# Copy package files
+# corepack viene incluido en Node 20 — no necesita npm install -g pnpm
+RUN corepack enable && corepack prepare pnpm@10 --activate
+
+# Copiar manifests primero para aprovechar cache de capas de Docker:
+# si package.json/lockfile no cambian, las siguientes capas se reutilizan
 COPY pnpm-lock.yaml package.json ./
-
-# Install all dependencies (including dev) for build
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
 COPY . .
 
-# Copy prisma schema
-COPY prisma ./prisma
-
-# Generate Prisma client
-RUN pnpm exec prisma generate
-
-# Build the application
-RUN pnpm install
-
+# pnpm build ya ejecuta "npx prisma generate && nest build" internamente,
+# así que no hace falta un RUN prisma generate separado antes de esto
 RUN pnpm build
 
-# Remove non-essential dev dependencies after build
+# Eliminar devDependencies del node_modules resultante
 RUN pnpm prune --prod
 
-# Stage 2: Runtime
+# Stage 2: Runtime — imagen mínima, sin herramientas de build ni pnpm
 FROM node:20-alpine
+
+# Usuario no-root: principio de mínimo privilegio en el contenedor
+RUN addgroup -S app && adduser -S app -G app
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+ENV NODE_ENV=production
 
-# Copy package files from builder
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
-
-# Install production dependencies from pruned node_modules
+# Solo los artefactos necesarios para ejecutar la app:
+# - package.json: algunos paquetes lo leen en runtime (ej. pino)
+# - node_modules: dependencias de producción ya podadas
+# - dist: código compilado
+# - generated: cliente Prisma generado (requiere los binaries del engine)
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-
-# Copy dist and generated files from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/generated ./generated
-COPY --from=builder /app/prisma ./prisma
 
-# Expose port
+USER app
+
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# Run the application
-CMD ["pnpm", "start:prod"]
+# Llamar node directamente evita el overhead de pnpm como process wrapper
+CMD ["node", "dist/src/main.js"]
+
+# Daniel Useche

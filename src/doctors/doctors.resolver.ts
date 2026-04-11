@@ -1,5 +1,4 @@
 import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorInput } from './dto/create-doctor.input';
@@ -41,13 +40,18 @@ export class DoctorsResolver {
   @Auth()
   @Query(() => [Doctor], {
     name: 'doctors',
-    description: 'Retorna todos los médicos activos',
+    description:
+      'Retorna médicos activos; opcionalmente filtrados por hospital',
   })
   findAll(
-    @CurrentUser() user: JwtPayload,
-    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
+    @Args('hospitalId', {
+      type: () => Int,
+      nullable: true,
+      description: 'ID del hospital para filtrar médicos vinculados',
+    })
+    hospitalId?: number,
   ): Promise<Doctor[]> {
-    return this.doctorsService.findAll(this.resolveHospitalId(user, hospitalId));
+    return this.doctorsService.findAll(hospitalId);
   }
 
   @Query(() => Doctor, {
@@ -79,3 +83,5 @@ export class DoctorsResolver {
     throw new BadRequestException('El usuario autenticado no tiene hospital asignado');
   }
 }
+
+// Daniel Useche

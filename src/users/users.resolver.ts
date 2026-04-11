@@ -43,7 +43,8 @@ export class UsersResolver {
   /** Solo ADMIN puede actualizar cualquier usuario */
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => User, {
-    description: 'Actualiza nombre, apellido, teléfono o rol de un usuario. Requiere rol ADMIN.',
+    description:
+      'Actualiza nombre, apellido, teléfono o rol de un usuario. Requiere rol ADMIN.',
   })
   updateUser(@Args('input') input: UpdateUserInput): Promise<User> {
     return this.usersService.update(input.id, input);
@@ -52,7 +53,8 @@ export class UsersResolver {
   /** Solo ADMIN puede desactivar usuarios */
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => User, {
-    description: 'Desactiva un usuario del sistema (soft delete). Requiere rol ADMIN.',
+    description:
+      'Desactiva un usuario del sistema (soft delete). Requiere rol ADMIN.',
   })
   removeUser(
     @Args('id', { type: () => ID, description: 'ID del usuario a desactivar' })

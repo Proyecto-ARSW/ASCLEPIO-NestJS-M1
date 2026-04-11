@@ -36,7 +36,8 @@ export class MedicinesService {
 
   async findOne(id: number): Promise<Medicine> {
     const med = await this.prisma.medicamentos.findUnique({ where: { id } });
-    if (!med) throw new NotFoundException(`Medicamento con ID "${id}" no encontrado`);
+    if (!med)
+      throw new NotFoundException(`Medicamento con ID "${id}" no encontrado`);
     return this.mapToEntity(med);
   }
 
@@ -45,14 +46,30 @@ export class MedicinesService {
     const updated = await this.prisma.medicamentos.update({
       where: { id },
       data: {
-        ...(input.nombreComercial !== undefined && { nombre_comercial: input.nombreComercial }),
-        ...(input.nombreGenerico !== undefined && { nombre_generico: input.nombreGenerico }),
-        ...(input.categoriaId !== undefined && { categoria_id: input.categoriaId }),
-        ...(input.descripcion !== undefined && { descripcion: input.descripcion }),
-        ...(input.indicaciones !== undefined && { indicaciones: input.indicaciones }),
-        ...(input.contraindicaciones !== undefined && { contraindicaciones: input.contraindicaciones }),
-        ...(input.presentacion !== undefined && { presentacion: input.presentacion }),
-        ...(input.requiereReceta !== undefined && { requiere_receta: input.requiereReceta }),
+        ...(input.nombreComercial !== undefined && {
+          nombre_comercial: input.nombreComercial,
+        }),
+        ...(input.nombreGenerico !== undefined && {
+          nombre_generico: input.nombreGenerico,
+        }),
+        ...(input.categoriaId !== undefined && {
+          categoria_id: input.categoriaId,
+        }),
+        ...(input.descripcion !== undefined && {
+          descripcion: input.descripcion,
+        }),
+        ...(input.indicaciones !== undefined && {
+          indicaciones: input.indicaciones,
+        }),
+        ...(input.contraindicaciones !== undefined && {
+          contraindicaciones: input.contraindicaciones,
+        }),
+        ...(input.presentacion !== undefined && {
+          presentacion: input.presentacion,
+        }),
+        ...(input.requiereReceta !== undefined && {
+          requiere_receta: input.requiereReceta,
+        }),
       },
     });
     return this.mapToEntity(updated);

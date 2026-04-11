@@ -1,6 +1,9 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import type { Request } from 'express';
+
+type AuthenticatedRequest = Request & { user: JwtPayload };
 
 /**
  * Extrae el usuario autenticado del JWT desde contexto REST o GraphQL.
@@ -10,8 +13,15 @@ export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): JwtPayload => {
     const ctxType = context.getType<string>();
     if (ctxType === 'http') {
-      return context.switchToHttp().getRequest().user;
+      const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+      return request.user;
     }
-    return GqlExecutionContext.create(context).getContext().req.user;
+
+    const gqlContext = GqlExecutionContext.create(context).getContext<{
+      req: AuthenticatedRequest;
+    }>();
+    return gqlContext.req.user;
   },
 );
+
+// Daniel Useche

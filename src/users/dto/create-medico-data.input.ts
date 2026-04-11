@@ -16,6 +16,9 @@ export class CreateMedicoDataInput {
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  @Field({ nullable: true, description: 'Número o nombre del consultorio (opcional)' })
+  @Field({
+    nullable: true,
+    description: 'Número o nombre del consultorio (opcional)',
+  })
   consultorio?: string;
 }

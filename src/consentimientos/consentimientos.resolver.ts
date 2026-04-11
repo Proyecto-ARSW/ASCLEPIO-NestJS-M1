@@ -18,11 +18,14 @@ import { RolUsuario } from '../users/enums/rol-usuario.enum';
  */
 @Resolver(() => ConsentimientoPaciente)
 export class ConsentimientosResolver {
-  constructor(private readonly consentimientosService: ConsentimientosService) {}
+  constructor(
+    private readonly consentimientosService: ConsentimientosService,
+  ) {}
 
   @Auth(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.RECEPCIONISTA)
   @Mutation(() => ConsentimientoPaciente, {
-    description: 'Registra un consentimiento informado de un paciente (ADMIN/MEDICO/RECEPCIONISTA)',
+    description:
+      'Registra un consentimiento informado de un paciente (ADMIN/MEDICO/RECEPCIONISTA)',
   })
   createConsentimiento(
     @Args('input') input: CreateConsentimientoInput,
@@ -46,13 +49,16 @@ export class ConsentimientosResolver {
     name: 'consentimiento',
     description: 'Busca un consentimiento por ID',
   })
-  findOne(@Args('id', { type: () => Int }) id: number): Promise<ConsentimientoPaciente> {
+  findOne(
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<ConsentimientoPaciente> {
     return this.consentimientosService.findOne(id);
   }
 
   @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => ConsentimientoPaciente, {
-    description: 'Actualiza el documento firmado de un consentimiento (ADMIN/RECEPCIONISTA)',
+    description:
+      'Actualiza el documento firmado de un consentimiento (ADMIN/RECEPCIONISTA)',
   })
   updateConsentimiento(
     @Args('input') input: UpdateConsentimientoInput,
@@ -62,7 +68,8 @@ export class ConsentimientosResolver {
 
   @Auth(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.RECEPCIONISTA)
   @Mutation(() => ConsentimientoPaciente, {
-    description: 'Revoca un consentimiento de paciente (registra fecha de revocación)',
+    description:
+      'Revoca un consentimiento de paciente (registra fecha de revocación)',
   })
   revocarConsentimiento(
     @Args('id', { type: () => Int }) id: number,

@@ -23,7 +23,8 @@ export class RecetasResolver {
 
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN)
   @Mutation(() => Receta, {
-    description: 'Crea una receta médica vinculada a un historial (MEDICO/ADMIN)',
+    description:
+      'Crea una receta médica vinculada a un historial (MEDICO/ADMIN)',
   })
   createReceta(@Args('input') input: CreateRecetaInput): Promise<Receta> {
     return this.recetasService.create(input);
@@ -59,7 +60,8 @@ export class RecetasResolver {
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => Receta, {
-    description: 'Elimina físicamente una receta (solo ADMIN, en casos excepcionales)',
+    description:
+      'Elimina físicamente una receta (solo ADMIN, en casos excepcionales)',
   })
   removeReceta(@Args('id', { type: () => Int }) id: number): Promise<Receta> {
     return this.recetasService.remove(id);

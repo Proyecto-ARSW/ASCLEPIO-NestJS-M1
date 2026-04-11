@@ -1,25 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import request, { Response as SupertestResponse } from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { HealthModule } from './../src/health/health.module';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [HealthModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it('/health (GET)', () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .expect(200)
-      .expect('Hello World!');
+      .expect((res: SupertestResponse) => {
+        const body: unknown = res.body;
+        expect(typeof body).toBe('object');
+        expect(body).not.toBeNull();
+        expect('status' in (body as Record<string, unknown>)).toBe(true);
+        expect((body as { status: string }).status).toBe('ok');
+      });
   });
 });
+
+// Daniel Useche

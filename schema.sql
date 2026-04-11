@@ -26,15 +26,20 @@ CREATE TABLE usuarios (
 );
 
 CREATE TABLE pacientes (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    fecha_nacimiento    DATE,
-    tipo_sangre         VARCHAR(5),
-    numero_documento    VARCHAR(20) UNIQUE,
-    tipo_documento      VARCHAR(20) DEFAULT 'CC',
-    eps                 VARCHAR(100),
-    alergias            TEXT,
-    creado_en           TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id               UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    fecha_nacimiento         DATE,
+    -- Valor cifrado AES-256-GCM: formato "iv_hex:authTag_hex:ciphertext_hex"
+    -- VARCHAR(200) cubre el overhead del cifrado (~70 chars para valores cortos)
+    tipo_sangre              VARCHAR(200),
+    numero_documento         VARCHAR(200),
+    -- HMAC-SHA256 del numero_documento en plaintext. Determinístico: permite
+    -- búsquedas indexadas sin exponer el dato real. UNIQUE reemplaza al de numero_documento.
+    numero_documento_hmac    VARCHAR(64) UNIQUE,
+    tipo_documento           VARCHAR(20) DEFAULT 'CC',
+    eps                      VARCHAR(100),
+    alergias                 TEXT,
+    creado_en                TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 

@@ -1,10 +1,19 @@
 import { InputType, Field, Int, ID } from '@nestjs/graphql';
-import { IsUUID, IsInt, IsOptional, IsString, Min, MaxLength } from 'class-validator';
+import {
+  IsUUID,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MaxLength,
+} from 'class-validator';
 
 @InputType({ description: 'Datos para crear una receta médica' })
 export class CreateRecetaInput {
   @IsUUID()
-  @Field(() => ID, { description: 'ID del historial médico al que se asocia la receta' })
+  @Field(() => ID, {
+    description: 'ID del historial médico al que se asocia la receta',
+  })
   historialId: string;
 
   @IsInt()
@@ -27,11 +36,17 @@ export class CreateRecetaInput {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Field(() => Int, { nullable: true, description: 'Duración del tratamiento en días' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'Duración del tratamiento en días',
+  })
   duracionDias?: number;
 
   @IsOptional()
   @IsString()
-  @Field({ nullable: true, description: 'Observaciones o instrucciones especiales' })
+  @Field({
+    nullable: true,
+    description: 'Observaciones o instrucciones especiales',
+  })
   observaciones?: string;
 }

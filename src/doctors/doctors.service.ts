@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { CreateDoctorInput } from './dto/create-doctor.input';
 import { UpdateDoctorInput } from './dto/update-doctor.input';
@@ -39,15 +40,21 @@ export class DoctorsService {
   }
 
   async findAll(hospitalId?: number): Promise<Doctor[]> {
+    const where: Prisma.medicosWhereInput = {
+      activo: true,
+      ...(hospitalId
+        ? {
+            usuarios: {
+              hospital_usuario: {
+                some: { hospital_id: hospitalId },
+              },
+            },
+          }
+        : {}),
+    };
+
     const doctors = await this.prisma.medicos.findMany({
-      where: {
-        activo: true,
-        ...(hospitalId && {
-          usuarios: {
-            hospital_usuario: { some: { hospital_id: hospitalId } },
-          },
-        }),
-      },
+      where,
       orderBy: { creado_en: 'desc' },
       include: includeUsuario,
     });
@@ -144,3 +151,5 @@ export class DoctorsService {
     };
   }
 }
+
+// Daniel Useche

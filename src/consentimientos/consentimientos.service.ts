@@ -12,7 +12,9 @@ import { ConsentimientoPaciente } from './entities/consentimiento-paciente.entit
 export class ConsentimientosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateConsentimientoInput): Promise<ConsentimientoPaciente> {
+  async create(
+    input: CreateConsentimientoInput,
+  ): Promise<ConsentimientoPaciente> {
     const consent = await this.prisma.consentimientos_paciente.create({
       data: {
         paciente_id: input.pacienteId,
@@ -34,13 +36,21 @@ export class ConsentimientosService {
   }
 
   async findOne(id: number): Promise<ConsentimientoPaciente> {
-    const consent = await this.prisma.consentimientos_paciente.findUnique({ where: { id } });
-    if (!consent) throw new NotFoundException(`Consentimiento con ID "${id}" no encontrado`);
+    const consent = await this.prisma.consentimientos_paciente.findUnique({
+      where: { id },
+    });
+    if (!consent)
+      throw new NotFoundException(
+        `Consentimiento con ID "${id}" no encontrado`,
+      );
     return this.mapToEntity(consent);
   }
 
   /** Actualiza únicamente el documento firmado */
-  async update(id: number, input: UpdateConsentimientoInput): Promise<ConsentimientoPaciente> {
+  async update(
+    id: number,
+    input: UpdateConsentimientoInput,
+  ): Promise<ConsentimientoPaciente> {
     await this.findOne(id);
     const updated = await this.prisma.consentimientos_paciente.update({
       where: { id },
@@ -60,7 +70,9 @@ export class ConsentimientosService {
   async revocar(id: number): Promise<ConsentimientoPaciente> {
     const consent = await this.findOne(id);
     if (consent.revocado) {
-      throw new BadRequestException(`El consentimiento con ID "${id}" ya fue revocado`);
+      throw new BadRequestException(
+        `El consentimiento con ID "${id}" ya fue revocado`,
+      );
     }
     const updated = await this.prisma.consentimientos_paciente.update({
       where: { id },
