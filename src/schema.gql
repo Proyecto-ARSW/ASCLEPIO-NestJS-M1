@@ -648,6 +648,7 @@ type Mutation {
 
   """Cancelar un turno activo"""
   cancelarTurno(id: ID!): Turno!
+  completeAppoinment(id: ID!): Appoinment!
   confirmSlotOffer(input: ConfirmSlotInput!): Appoinment!
 
   """Registrar un nuevo turno en la cola del hospital"""
@@ -965,8 +966,11 @@ type Query {
     id: ID!
   ): Doctor!
 
-  """Retorna todos los médicos activos"""
-  doctors: [Doctor!]!
+  """Retorna médicos activos; opcionalmente filtrados por hospital"""
+  doctors(
+    """ID del hospital para filtrar médicos vinculados"""
+    hospitalId: Int
+  ): [Doctor!]!
 
   """Busca un registro de historial médico por ID"""
   historial(id: ID!): HistorialMedico!
@@ -996,6 +1000,9 @@ type Query {
 
   """Lista medicamentos del catálogo. Por defecto solo activos."""
   medicines(soloActivos: Boolean = true): [Medicine!]!
+
+  """Perfil de paciente del usuario autenticado, o null si no tiene perfil"""
+  myPatientProfile: Patient
   notificaciones: [Notificacion!]!
   notificacionesSinLeer: [Notificacion!]!
 

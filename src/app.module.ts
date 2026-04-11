@@ -23,8 +23,10 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
+import type { Request } from 'express';
 
 @Module({
   imports: [
@@ -41,12 +43,12 @@ import { EncryptionModule } from './shared/encryption/encryption.module';
       {
         name: 'default',
         ttl: 60_000,
-        limit: 100,
+        limit: 500,
       },
       {
         name: 'auth',
-        ttl: 900_000,
-        limit: 10,
+        ttl: 60_000,
+        limit: 100,
       },
     ]),
     EncryptionModule,
@@ -58,16 +60,12 @@ import { EncryptionModule } from './shared/encryption/encryption.module';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      // En producción, autoSchemaFile:true mantiene el schema en memoria sin
-      // escribir al disco. Evita race conditions entre instancias y no depende
-      // de permisos de escritura en el directorio de despliegue de Azure.
-      // En desarrollo, escribe el archivo para que IDEs y herramientas lo lean.
       autoSchemaFile:
         process.env.NODE_ENV === 'production'
           ? true
           : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      context: ({ req }) => ({ req }),
+      context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
       subscriptions: {
@@ -101,12 +99,9 @@ import { EncryptionModule } from './shared/encryption/encryption.module';
   ],
   controllers: [],
   providers: [
-    // ThrottlerGuard como guard global: aplica rate limiting a todos los endpoints REST.
-    // Las mutations GraphQL no pasan por ThrottlerGuard por defecto (no tienen req HTTP
-    // estándar), por lo que la protección principal aplica sobre /auth/login y /auth/register.
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: AppThrottlerGuard,
     },
   ],
 })

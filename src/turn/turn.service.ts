@@ -12,8 +12,10 @@ import { NotificationsService } from 'src/notifications/notifications.service';
 import { Turno, EstadoTurno, TipoTurno } from './entities/turn.entity';
 import { CreateTurnInput } from './dto/create-turn.dto';
 
-export const CANAL_TURNO_HOSPITAL = (hospitalId: number) => `TURNO_HOSPITAL_${hospitalId}`;
-export const CANAL_TURNO_PACIENTE = (pacienteId: string) => `TURNO_PACIENTE_${pacienteId}`;
+export const CANAL_TURNO_HOSPITAL = (hospitalId: number) =>
+  `TURNO_HOSPITAL_${hospitalId}`;
+export const CANAL_TURNO_PACIENTE = (pacienteId: string) =>
+  `TURNO_PACIENTE_${pacienteId}`;
 
 type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
@@ -28,23 +30,37 @@ export class TurnService {
   // ── CREAR TURNO ───────────────────────────────────────────────────────────────
 
   async create(input: CreateTurnInput): Promise<Turno> {
-    const hospital = await this.prisma.hospitales.findUnique({ where: { id: input.hospitalId } });
+    const hospital = await this.prisma.hospitales.findUnique({
+      where: { id: input.hospitalId },
+    });
     if (!hospital || !hospital.activo) {
-      throw new NotFoundException(`Hospital con ID ${input.hospitalId} no encontrado o inactivo`);
+      throw new NotFoundException(
+        `Hospital con ID ${input.hospitalId} no encontrado o inactivo`,
+      );
     }
 
-    const paciente = await this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } });
+    const paciente = await this.prisma.pacientes.findUnique({
+      where: { id: input.pacienteId },
+    });
     if (!paciente) {
-      throw new NotFoundException(`Paciente con ID ${input.pacienteId} no encontrado`);
+      throw new NotFoundException(
+        `Paciente con ID ${input.pacienteId} no encontrado`,
+      );
     }
 
     if (input.medicoId) {
-      const medico = await this.prisma.medicos.findUnique({ where: { id: input.medicoId } });
+      const medico = await this.prisma.medicos.findUnique({
+        where: { id: input.medicoId },
+      });
       if (!medico) {
-        throw new NotFoundException(`Médico con ID ${input.medicoId} no encontrado`);
+        throw new NotFoundException(
+          `Médico con ID ${input.medicoId} no encontrado`,
+        );
       }
       if (!medico.activo) {
-        throw new BadRequestException(`El médico con ID ${input.medicoId} no está activo`);
+        throw new BadRequestException(
+          `El médico con ID ${input.medicoId} no está activo`,
+        );
       }
     }
 
@@ -53,7 +69,9 @@ export class TurnService {
         where: { id: input.especialidadId },
       });
       if (!especialidad) {
-        throw new NotFoundException(`Especialidad con ID ${input.especialidadId} no encontrada`);
+        throw new NotFoundException(
+          `Especialidad con ID ${input.especialidadId} no encontrada`,
+        );
       }
     }
 
@@ -88,10 +106,15 @@ export class TurnService {
           });
           // Regla de negocio: numero diario = total turnos del dia + 1.
           // Fallback defensivo para evitar choques si existen datos legacy no contiguos.
-          const numeroTurno = Math.max(totalTurnosDia, ultimoTurno?.numero_turno ?? 0) + 1;
+          const numeroTurno =
+            Math.max(totalTurnosDia, ultimoTurno?.numero_turno ?? 0) + 1;
 
           const enEspera = await tx.turnos.count({
-            where: { hospital_id: input.hospitalId, fecha: hoy, estado: EstadoTurno.EN_ESPERA },
+            where: {
+              hospital_id: input.hospitalId,
+              fecha: hoy,
+              estado: EstadoTurno.EN_ESPERA,
+            },
           });
           const posicionCola = enEspera + 1;
 
@@ -194,7 +217,11 @@ export class TurnService {
 
       const updatedTurno = await tx.turnos.update({
         where: { id: turnoALlamar.id },
-        data: { estado: EstadoTurno.EN_CONSULTA, llamado_en: new Date(), posicion_cola: 0 },
+        data: {
+          estado: EstadoTurno.EN_CONSULTA,
+          llamado_en: new Date(),
+          posicion_cola: 0,
+        },
         include: { pacientes: { select: { usuario_id: true } } },
       });
 
@@ -240,8 +267,10 @@ export class TurnService {
   async atender(id: string): Promise<Turno> {
     const turno = await this.prisma.turnos.findUnique({ where: { id } });
     if (!turno) throw new NotFoundException(`Turno "${id}" no encontrado`);
-    if (turno.estado !== EstadoTurno.EN_CONSULTA) {
-      throw new BadRequestException('Solo se pueden completar turnos en estado EN_CONSULTA');
+    if (String(turno.estado) !== 'EN_CONSULTA') {
+      throw new BadRequestException(
+        'Solo se pueden completar turnos en estado EN_CONSULTA',
+      );
     }
 
     const updatedCount = await this.prisma.turnos.updateMany({
@@ -249,7 +278,9 @@ export class TurnService {
       data: { estado: EstadoTurno.ATENDIDO, atendido_en: new Date() },
     });
     if (updatedCount.count === 0) {
-      throw new ConflictException('El turno cambió de estado antes de marcarse como atendido');
+      throw new ConflictException(
+        'El turno cambió de estado antes de marcarse como atendido',
+      );
     }
 
     const updated = await this.prisma.turnos.findUnique({ where: { id } });
@@ -282,24 +313,39 @@ export class TurnService {
       if (!turno) throw new NotFoundException(`Turno "${id}" no encontrado`);
 
       if (turno.hospital_id) {
-        await this.acquireQueueLock(tx, turno.hospital_id, this.toDate(turno.fecha));
+        await this.acquireQueueLock(
+          tx,
+          turno.hospital_id,
+          this.toDate(turno.fecha),
+        );
       }
 
       const updatedCount = await tx.turnos.updateMany({
-        where: { id, estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] } },
+        where: {
+          id,
+          estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
+        },
         data: { estado: EstadoTurno.CANCELADO },
       });
 
       if (updatedCount.count === 0) {
-        throw new BadRequestException(`No se puede cancelar un turno en estado ${turno.estado}`);
+        throw new BadRequestException(
+          `No se puede cancelar un turno en estado ${turno.estado}`,
+        );
       }
 
       if (turno.hospital_id) {
-        await this.recalcularPosicionesTx(tx, turno.hospital_id, undefined, this.toDate(turno.fecha));
+        await this.recalcularPosicionesTx(
+          tx,
+          turno.hospital_id,
+          undefined,
+          this.toDate(turno.fecha),
+        );
       }
 
       const updatedTurno = await tx.turnos.findUnique({ where: { id } });
-      if (!updatedTurno) throw new NotFoundException(`Turno "${id}" no encontrado`);
+      if (!updatedTurno)
+        throw new NotFoundException(`Turno "${id}" no encontrado`);
       return updatedTurno;
     });
 
@@ -312,7 +358,11 @@ export class TurnService {
     }
 
     await this.pubSub.publish(CANAL_TURNO_PACIENTE(updated.paciente_id), {
-      miTurnoActualizado: { tipo: 'CANCELADO', turno: entity, mensaje: 'Tu turno fue cancelado.' },
+      miTurnoActualizado: {
+        tipo: 'CANCELADO',
+        turno: entity,
+        mensaje: 'Tu turno fue cancelado.',
+      },
     });
 
     return entity;
@@ -320,7 +370,11 @@ export class TurnService {
 
   // ── CONSULTAS ────────────────────────────────────────────────────────────────
 
-  async findByHospital(hospitalId: number, fecha?: Date, estado?: EstadoTurno): Promise<Turno[]> {
+  async findByHospital(
+    hospitalId: number,
+    fecha?: Date,
+    estado?: EstadoTurno,
+  ): Promise<Turno[]> {
     const fechaFiltro = fecha ? this.toDate(fecha) : this.today();
 
     const turnos = await this.prisma.turnos.findMany({
@@ -365,8 +419,16 @@ export class TurnService {
 
   // ── HELPERS ───────────────────────────────────────────────────────────────────
 
-  private async recalcularPosiciones(hospitalId: number, medicoId?: string): Promise<void> {
-    await this.recalcularPosicionesTx(this.prisma, hospitalId, medicoId, this.today());
+  private async recalcularPosiciones(
+    hospitalId: number,
+    medicoId?: string,
+  ): Promise<void> {
+    await this.recalcularPosicionesTx(
+      this.prisma,
+      hospitalId,
+      medicoId,
+      this.today(),
+    );
   }
 
   private async recalcularPosicionesTx(
@@ -421,9 +483,14 @@ export class TurnService {
       return false;
     }
 
-    const target = Array.isArray(error.meta?.target)
-      ? error.meta?.target.join(',')
-      : String(error.meta?.target ?? '');
+    const targetMeta = error.meta?.target;
+    const target = Array.isArray(targetMeta)
+      ? targetMeta
+          .filter((value): value is string => typeof value === 'string')
+          .join(',')
+      : typeof targetMeta === 'string'
+        ? targetMeta
+        : '';
 
     return /idx_turnos_unique|idx_turnos_unique_hospital_fecha_numero|turnos.*numero_turno|fecha.*numero_turno/i.test(
       `${target} ${error.message}`,
@@ -431,12 +498,17 @@ export class TurnService {
   }
 
   private isRetryableTransactionError(error: unknown): boolean {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2034'
+    ) {
       return true;
     }
 
     if (error instanceof Error) {
-      return /deadlock detected|could not serialize access|serialization failure/i.test(error.message);
+      return /deadlock detected|could not serialize access|serialization failure/i.test(
+        error.message,
+      );
     }
 
     return false;

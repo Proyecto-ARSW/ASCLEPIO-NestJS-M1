@@ -10,14 +10,17 @@ export class CreateTurnInput {
 
   @IsInt()
   @Min(1)
-  @Field(() => Int, { description: 'ID del hospital donde se solicita el turno' })
+  @Field(() => Int, {
+    description: 'ID del hospital donde se solicita el turno',
+  })
   hospitalId: number;
 
   @IsOptional()
   @IsUUID()
   @Field(() => ID, {
     nullable: true,
-    description: 'ID del médico específico (opcional). Si no se provee, se asigna por especialidad.',
+    description:
+      'ID del médico específico (opcional). Si no se provee, se asigna por especialidad.',
   })
   medicoId?: string;
 
@@ -35,7 +38,8 @@ export class CreateTurnInput {
   @Field(() => TipoTurno, {
     nullable: true,
     defaultValue: TipoTurno.NORMAL,
-    description: 'Tipo de turno: NORMAL, PRIORITARIO o URGENTE. Por defecto: NORMAL.',
+    description:
+      'Tipo de turno: NORMAL, PRIORITARIO o URGENTE. Por defecto: NORMAL.',
   })
   tipo?: TipoTurno;
 }

@@ -20,7 +20,9 @@ export class SedesService {
   }
 
   async findAll(): Promise<Sede[]> {
-    const sedes = await this.prisma.sedes.findMany({ orderBy: { nombre: 'asc' } });
+    const sedes = await this.prisma.sedes.findMany({
+      orderBy: { nombre: 'asc' },
+    });
     return sedes.map((s) => this.mapToEntity(s));
   }
 

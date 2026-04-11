@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/require-await */
+
 import { PubSub } from 'graphql-subscriptions';
 import { NotificationsService } from '../src/notifications/notifications.service';
 import { PrismaService } from '../src/shared/prisma/prisma.service';
@@ -12,7 +14,11 @@ declare const expect: (value: unknown) => {
 };
 declare const jest: {
   fn: <T extends (...args: never[]) => unknown>(impl?: T) => T;
-  mock: (moduleName: string, factory: () => unknown, options?: { virtual?: boolean }) => void;
+  mock: (
+    moduleName: string,
+    factory: () => unknown,
+    options?: { virtual?: boolean },
+  ) => void;
 };
 
 jest.mock(
@@ -34,7 +40,10 @@ jest.mock(
       Prisma: {
         PrismaClientKnownRequestError,
         join: (values: unknown[]) => values,
-        sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values }),
+        sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({
+          strings,
+          values,
+        }),
       },
     };
   },
@@ -98,18 +107,24 @@ function createTurnPrismaMock() {
 
   let txQueue = Promise.resolve();
 
-  const matchesWhere = (turn: TurnRecord, where: Record<string, unknown> | undefined) => {
+  const matchesWhere = (
+    turn: TurnRecord,
+    where: Record<string, unknown> | undefined,
+  ) => {
     if (!where) return true;
 
     if (where.id && turn.id !== where.id) return false;
-    if (where.paciente_id && turn.paciente_id !== where.paciente_id) return false;
+    if (where.paciente_id && turn.paciente_id !== where.paciente_id)
+      return false;
 
     if (Object.prototype.hasOwnProperty.call(where, 'hospital_id')) {
-      if (turn.hospital_id !== (where.hospital_id as number | null | undefined)) return false;
+      if (turn.hospital_id !== (where.hospital_id as number | null | undefined))
+        return false;
     }
 
     if (Object.prototype.hasOwnProperty.call(where, 'medico_id')) {
-      if (turn.medico_id !== (where.medico_id as string | null | undefined)) return false;
+      if (turn.medico_id !== (where.medico_id as string | null | undefined))
+        return false;
     }
 
     if (where.fecha && !sameDate(turn.fecha, where.fecha as Date)) return false;
@@ -133,8 +148,12 @@ function createTurnPrismaMock() {
 
     list.sort((a, b) => {
       for (const rule of orderArray) {
-        const key = Object.keys(rule as Record<string, unknown>)[0] as keyof TurnRecord;
-        const direction = (rule as Record<string, 'asc' | 'desc'>)[key as string];
+        const key = Object.keys(
+          rule as Record<string, unknown>,
+        )[0] as keyof TurnRecord;
+        const direction = (rule as Record<string, 'asc' | 'desc'>)[
+          key as string
+        ];
         const left = a[key] as string | number;
         const right = b[key] as string | number;
 
@@ -165,7 +184,8 @@ function createTurnPrismaMock() {
   const recomputeAllWaitingPositions = () => {
     const groups = new Map<string, TurnRecord[]>();
     for (const turn of turns) {
-      if (turn.estado !== EstadoTurno.EN_ESPERA || turn.hospital_id == null) continue;
+      if (turn.estado !== EstadoTurno.EN_ESPERA || turn.hospital_id == null)
+        continue;
       const key = `${turn.hospital_id}:${truncateDate(turn.fecha).toISOString().slice(0, 10)}`;
       const existing = groups.get(key) ?? [];
       existing.push(turn);
@@ -186,10 +206,12 @@ function createTurnPrismaMock() {
 
   const prisma = {
     hospitales: {
-      findUnique: async ({ where }: { where: { id: number } }) => hospitals.get(where.id) ?? null,
+      findUnique: async ({ where }: { where: { id: number } }) =>
+        hospitals.get(where.id) ?? null,
     },
     pacientes: {
-      findUnique: async ({ where }: { where: { id: string } }) => patients.get(where.id) ?? null,
+      findUnique: async ({ where }: { where: { id: string } }) =>
+        patients.get(where.id) ?? null,
     },
     medicos: {
       findUnique: async () => null,
@@ -198,9 +220,16 @@ function createTurnPrismaMock() {
       findUnique: async () => null,
     },
     turnos: {
-      findFirst: async ({ where, orderBy, include, select }: Record<string, unknown>) => {
+      findFirst: async ({
+        where,
+        orderBy,
+        include,
+        select,
+      }: Record<string, unknown>) => {
         const ordered = orderTurns(
-          turns.filter((turn) => matchesWhere(turn, where as Record<string, unknown> | undefined)),
+          turns.filter((turn) =>
+            matchesWhere(turn, where as Record<string, unknown> | undefined),
+          ),
           orderBy,
         );
         const found = ordered[0];
@@ -212,7 +241,9 @@ function createTurnPrismaMock() {
       },
       findMany: async ({ where, orderBy, select }: Record<string, unknown>) => {
         const ordered = orderTurns(
-          turns.filter((turn) => matchesWhere(turn, where as Record<string, unknown> | undefined)),
+          turns.filter((turn) =>
+            matchesWhere(turn, where as Record<string, unknown> | undefined),
+          ),
           orderBy,
         );
         if (select && (select as { id?: boolean }).id) {
@@ -223,7 +254,7 @@ function createTurnPrismaMock() {
       count: async ({ where }: { where: Record<string, unknown> }) =>
         turns.filter((turn) => matchesWhere(turn, where)).length,
       create: async ({ data }: { data: Partial<TurnRecord> }) => {
-        const fecha = truncateDate((data.fecha as Date | undefined) ?? new Date());
+        const fecha = truncateDate(data.fecha ?? new Date());
         const duplicate = turns.find(
           (turn) =>
             turn.hospital_id === (data.hospital_id ?? null) &&
@@ -239,13 +270,13 @@ function createTurnPrismaMock() {
         const created: TurnRecord = {
           id: `turn-${turnCounter++}`,
           paciente_id: String(data.paciente_id),
-          medico_id: (data.medico_id as string | null | undefined) ?? null,
-          especialidad_id: (data.especialidad_id as number | null | undefined) ?? null,
-          hospital_id: (data.hospital_id as number | null | undefined) ?? null,
+          medico_id: data.medico_id ?? null,
+          especialidad_id: data.especialidad_id ?? null,
+          hospital_id: data.hospital_id ?? null,
           numero_turno: Number(data.numero_turno),
-          tipo: (data.tipo as TipoTurno | undefined) ?? TipoTurno.NORMAL,
-          estado: (data.estado as EstadoTurno | undefined) ?? EstadoTurno.EN_ESPERA,
-          posicion_cola: (data.posicion_cola as number | null | undefined) ?? null,
+          tipo: data.tipo ?? TipoTurno.NORMAL,
+          estado: data.estado ?? EstadoTurno.EN_ESPERA,
+          posicion_cola: data.posicion_cola ?? null,
           llamado_en: null,
           atendido_en: null,
           fecha,
@@ -256,11 +287,15 @@ function createTurnPrismaMock() {
         return created;
       },
       findUnique: async ({ where, include }: Record<string, unknown>) => {
-        const found = turns.find((turn) => turn.id === (where as { id: string }).id);
+        const found = turns.find(
+          (turn) => turn.id === (where as { id: string }).id,
+        );
         return found ? withPaciente(found, include) : null;
       },
       update: async ({ where, data, include }: Record<string, unknown>) => {
-        const found = turns.find((turn) => turn.id === (where as { id: string }).id);
+        const found = turns.find(
+          (turn) => turn.id === (where as { id: string }).id,
+        );
         if (!found) throw new Error('Turno no encontrado');
         Object.assign(found, data);
         return withPaciente(found, include);
@@ -268,7 +303,8 @@ function createTurnPrismaMock() {
       updateMany: async ({ where, data }: Record<string, unknown>) => {
         let count = 0;
         for (const turn of turns) {
-          if (!matchesWhere(turn, where as Record<string, unknown> | undefined)) continue;
+          if (!matchesWhere(turn, where as Record<string, unknown> | undefined))
+            continue;
           Object.assign(turn, data);
           count += 1;
         }
@@ -276,7 +312,11 @@ function createTurnPrismaMock() {
       },
     },
     notificaciones: {
-      create: async ({ data }: { data: Omit<NotificacionRecord, 'id' | 'leida' | 'creado_en'> }) => {
+      create: async ({
+        data,
+      }: {
+        data: Omit<NotificacionRecord, 'id' | 'leida' | 'creado_en'>;
+      }) => {
         const notif: NotificacionRecord = {
           id: `notif-${notificationCounter++}`,
           usuario_id: data.usuario_id,
@@ -326,13 +366,20 @@ describe('Turn flow integration (service)', () => {
         notifications: NotificationsService,
         pubSub: PubSub,
       ) => {
-        create: (input: { pacienteId: string; hospitalId: number; tipo: TipoTurno }) => Promise<{
+        create: (input: {
+          pacienteId: string;
+          hospitalId: number;
+          tipo: TipoTurno;
+        }) => Promise<{
           id: string;
           numeroTurno: number;
           estado: EstadoTurno;
         }>;
         cancelar: (id: string) => Promise<unknown>;
-        llamarSiguiente: (hospitalId: number, medicoId?: string) => Promise<{
+        llamarSiguiente: (
+          hospitalId: number,
+          medicoId?: string,
+        ) => Promise<{
           id: string;
           estado: EstadoTurno;
         }>;
@@ -376,7 +423,9 @@ describe('Turn flow integration (service)', () => {
     expect(second.id).not.toBe(first.id);
     expect(second.numeroTurno).toBe(first.numeroTurno + 1);
 
-    const firstStored = prisma._state.turns.find((turn) => turn.id === first.id);
+    const firstStored = prisma._state.turns.find(
+      (turn) => turn.id === first.id,
+    );
     expect(firstStored?.estado).toBe(EstadoTurno.CANCELADO);
   });
 
@@ -421,3 +470,5 @@ describe('Turn flow integration (service)', () => {
     expect(Math.max(...numbers)).toBe(10);
   });
 });
+
+// Daniel Useche

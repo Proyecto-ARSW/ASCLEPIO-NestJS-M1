@@ -1,6 +1,8 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 
-@ObjectType({ description: 'Notificación persistente para un usuario del sistema' })
+@ObjectType({
+  description: 'Notificación persistente para un usuario del sistema',
+})
 export class Notificacion {
   @Field(() => ID)
   id: string;

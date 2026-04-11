@@ -33,13 +33,18 @@ export class UsuarioBasicDto {
 }
 
 export class LoginResponseDto {
-  @ApiProperty({ description: 'Token temporal (5 min) para seleccionar hospital' })
+  @ApiProperty({
+    description: 'Token temporal (5 min) para seleccionar hospital',
+  })
   preToken: string;
 
   @ApiProperty({ type: UsuarioBasicDto })
   usuario: UsuarioBasicDto;
 
-  @ApiProperty({ type: [HospitalBasicDto], description: 'Hospitales en los que el usuario está registrado' })
+  @ApiProperty({
+    type: [HospitalBasicDto],
+    description: 'Hospitales en los que el usuario está registrado',
+  })
   hospitales: HospitalBasicDto[];
 }
 

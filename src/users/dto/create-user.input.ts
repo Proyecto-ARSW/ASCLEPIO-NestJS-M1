@@ -70,7 +70,8 @@ export class CreateUserInput {
   @Type(() => CreatePacienteDataInput)
   @Field(() => CreatePacienteDataInput, {
     nullable: true,
-    description: 'Datos del perfil de paciente. Opcional cuando rol es PACIENTE',
+    description:
+      'Datos del perfil de paciente. Opcional cuando rol es PACIENTE',
   })
   pacienteData?: CreatePacienteDataInput;
 
@@ -79,7 +80,8 @@ export class CreateUserInput {
   @Type(() => CreateEnfermeroDataInput)
   @Field(() => CreateEnfermeroDataInput, {
     nullable: true,
-    description: 'Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO',
+    description:
+      'Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO',
   })
   enfermeroData?: CreateEnfermeroDataInput;
 }

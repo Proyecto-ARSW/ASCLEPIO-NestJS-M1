@@ -59,10 +59,13 @@ export class CreateAppoinmentInput {
    */
   @IsOptional()
   @IsString()
-  @Matches(/^\d{2}:\d{2}$/, { message: 'hora debe tener formato HH:MM (ej. "09:00")' })
+  @Matches(/^\d{2}:\d{2}$/, {
+    message: 'hora debe tener formato HH:MM (ej. "09:00")',
+  })
   @Field({
     nullable: true,
-    description: 'Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere disponibilidadId o diaSemana.',
+    description:
+      'Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere disponibilidadId o diaSemana.',
   })
   hora?: string;
 

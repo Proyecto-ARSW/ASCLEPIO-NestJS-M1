@@ -37,10 +37,14 @@ export class AuthService {
     const rol = dto.rol ?? RolUsuario.PACIENTE;
 
     if (rol === RolUsuario.MEDICO && !dto.medicoData) {
-      throw new BadRequestException('medicoData es requerido para el rol MEDICO');
+      throw new BadRequestException(
+        'medicoData es requerido para el rol MEDICO',
+      );
     }
     if (rol === RolUsuario.ENFERMERO && !dto.enfermeroData) {
-      throw new BadRequestException('enfermeroData es requerido para el rol ENFERMERO');
+      throw new BadRequestException(
+        'enfermeroData es requerido para el rol ENFERMERO',
+      );
     }
     if (
       rol === RolUsuario.ENFERMERO &&
@@ -61,16 +65,25 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (emailExiste) {
-      throw new ConflictException(`Ya existe un usuario con el email "${dto.email}"`);
+      throw new ConflictException(
+        `Ya existe un usuario con el email "${dto.email}"`,
+      );
     }
 
-    let hospital: { id: number; nombre: string; departamento: string; ciudad: string } | null = null;
+    let hospital: {
+      id: number;
+      nombre: string;
+      departamento: string;
+      ciudad: string;
+    } | null = null;
     if (dto.hospitalId) {
       hospital = await this.prisma.hospitales.findUnique({
         where: { id: dto.hospitalId },
       });
       if (!hospital) {
-        throw new NotFoundException(`Hospital con ID ${dto.hospitalId} no encontrado o inactivo`);
+        throw new NotFoundException(
+          `Hospital con ID ${dto.hospitalId} no encontrado o inactivo`,
+        );
       }
     }
 
@@ -136,7 +149,8 @@ export class AuthService {
             numero_registro: dto.enfermeroData.numeroRegistro,
             nivel_formacion: dto.enfermeroData.nivelFormacion,
             area_especializacion: dto.enfermeroData.areaEspecializacion!,
-            certificacion_triage: dto.enfermeroData.certificacionTriage ?? false,
+            certificacion_triage:
+              dto.enfermeroData.certificacionTriage ?? false,
             fecha_certificacion: dto.enfermeroData.fechaCertificacion,
           },
         });
@@ -161,7 +175,10 @@ export class AuthService {
       rol: usuario.rol as RolUsuario,
       nombre: usuario.nombre,
       apellido: usuario.apellido,
-      ...(hospital && { hospitalId: hospital.id, hospitalNombre: hospital.nombre }),
+      ...(hospital && {
+        hospitalId: hospital.id,
+        hospitalNombre: hospital.nombre,
+      }),
     };
 
     this.rabbitmqService.notifyUserRegistered(
@@ -344,6 +361,11 @@ export class AuthService {
     departamento: string;
     ciudad: string;
   }): HospitalBasicDto {
-    return { id: h.id, nombre: h.nombre, departamento: h.departamento, ciudad: h.ciudad };
+    return {
+      id: h.id,
+      nombre: h.nombre,
+      departamento: h.departamento,
+      ciudad: h.ciudad,
+    };
   }
 }

@@ -80,7 +80,10 @@ export class CreateHospitalDto {
   @Max(90)
   latitud?: number;
 
-  @ApiPropertyOptional({ example: -74.0577, description: 'Longitud geográfica' })
+  @ApiPropertyOptional({
+    example: -74.0577,
+    description: 'Longitud geográfica',
+  })
   @IsOptional()
   @IsNumber()
   @Min(-180)

@@ -22,7 +22,10 @@ export class CreatePacienteDataInput {
 
   @IsOptional()
   @IsString()
-  @Field({ nullable: true, description: 'Tipo de documento (CC, TI, CE, etc.). Por defecto: CC' })
+  @Field({
+    nullable: true,
+    description: 'Tipo de documento (CC, TI, CE, etc.). Por defecto: CC',
+  })
   tipoDocumento?: string;
 
   @IsOptional()

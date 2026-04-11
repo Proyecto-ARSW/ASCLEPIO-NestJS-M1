@@ -60,7 +60,8 @@ export class DisponibilidadEnfermeroResolver {
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => DisponibilidadEnfermero, {
-    description: 'Elimina permanentemente un bloque de disponibilidad de enfermero',
+    description:
+      'Elimina permanentemente un bloque de disponibilidad de enfermero',
   })
   removeDisponibilidadEnfermero(
     @Args('id', { type: () => Int }) id: number,
@@ -70,7 +71,8 @@ export class DisponibilidadEnfermeroResolver {
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => Int, {
-    description: 'Desactiva todos los bloques de disponibilidad de un enfermero',
+    description:
+      'Desactiva todos los bloques de disponibilidad de un enfermero',
   })
   deactivateAllDisponibilidadesEnfermero(
     @Args('enfermeroId', { type: () => ID }) enfermeroId: string,

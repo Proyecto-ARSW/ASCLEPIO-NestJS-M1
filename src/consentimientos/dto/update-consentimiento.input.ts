@@ -1,7 +1,10 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-@InputType({ description: 'Datos para actualizar el documento firmado de un consentimiento' })
+@InputType({
+  description:
+    'Datos para actualizar el documento firmado de un consentimiento',
+})
 export class UpdateConsentimientoInput {
   @IsInt()
   @Min(1)
@@ -10,6 +13,9 @@ export class UpdateConsentimientoInput {
 
   @IsOptional()
   @IsString()
-  @Field({ nullable: true, description: 'Nueva ruta o URL del documento firmado' })
+  @Field({
+    nullable: true,
+    description: 'Nueva ruta o URL del documento firmado',
+  })
   documentoFirmado?: string;
 }

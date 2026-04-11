@@ -14,12 +14,21 @@ export class Receta {
   @Field({ nullable: true, description: 'Dosis indicada (ej. "500mg")' })
   dosis?: string;
 
-  @Field({ nullable: true, description: 'Frecuencia de administración (ej. "Cada 8 horas")' })
+  @Field({
+    nullable: true,
+    description: 'Frecuencia de administración (ej. "Cada 8 horas")',
+  })
   frecuencia?: string;
 
-  @Field(() => Int, { nullable: true, description: 'Duración del tratamiento en días' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'Duración del tratamiento en días',
+  })
   duracionDias?: number;
 
-  @Field({ nullable: true, description: 'Observaciones o instrucciones especiales' })
+  @Field({
+    nullable: true,
+    description: 'Observaciones o instrucciones especiales',
+  })
   observaciones?: string;
 }

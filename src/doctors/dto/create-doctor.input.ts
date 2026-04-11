@@ -1,5 +1,12 @@
 import { InputType, Field, Int, ID } from '@nestjs/graphql';
-import { IsUUID, IsInt, IsString, IsOptional, Min, MaxLength } from 'class-validator';
+import {
+  IsUUID,
+  IsInt,
+  IsString,
+  IsOptional,
+  Min,
+  MaxLength,
+} from 'class-validator';
 
 @InputType({ description: 'Datos requeridos para registrar un nuevo médico' })
 export class CreateDoctorInput {

@@ -122,7 +122,8 @@ export class UsersService {
             numero_registro: input.enfermeroData!.numeroRegistro,
             nivel_formacion: input.enfermeroData!.nivelFormacion,
             area_especializacion: input.enfermeroData!.areaEspecializacion!,
-            certificacion_triage: input.enfermeroData!.certificacionTriage ?? false,
+            certificacion_triage:
+              input.enfermeroData!.certificacionTriage ?? false,
             fecha_certificacion: input.enfermeroData!.fechaCertificacion,
           },
         });

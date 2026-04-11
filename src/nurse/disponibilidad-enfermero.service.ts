@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { CreateDisponibilidadEnfermeroInput } from './dto/create-disponibilidad-enfermero.input';
 import { UpdateDisponibilidadEnfermeroInput } from './dto/update-disponibilidad-enfermero.input';
@@ -8,7 +12,9 @@ import { DisponibilidadEnfermero } from './entities/disponibilidad-enfermero.ent
 export class DisponibilidadEnfermeroService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateDisponibilidadEnfermeroInput): Promise<DisponibilidadEnfermero> {
+  async create(
+    input: CreateDisponibilidadEnfermeroInput,
+  ): Promise<DisponibilidadEnfermero> {
     const horaInicio = new Date(`1970-01-01T${input.horaInicio}:00Z`);
     const horaFin = new Date(`1970-01-01T${input.horaFin}:00Z`);
 
@@ -38,17 +44,26 @@ export class DisponibilidadEnfermeroService {
   }
 
   async findOne(id: number): Promise<DisponibilidadEnfermero> {
-    const disp = await this.prisma.disponibilidad_enfermero.findUnique({ where: { id } });
-    if (!disp) throw new NotFoundException(`Disponibilidad con ID "${id}" no encontrada`);
+    const disp = await this.prisma.disponibilidad_enfermero.findUnique({
+      where: { id },
+    });
+    if (!disp)
+      throw new NotFoundException(
+        `Disponibilidad con ID "${id}" no encontrada`,
+      );
     return this.mapToEntity(disp);
   }
 
-  async update(input: UpdateDisponibilidadEnfermeroInput): Promise<DisponibilidadEnfermero> {
+  async update(
+    input: UpdateDisponibilidadEnfermeroInput,
+  ): Promise<DisponibilidadEnfermero> {
     await this.findOne(input.id);
     const data: Record<string, unknown> = {};
     if (input.diaSemana !== undefined) data.dia_semana = input.diaSemana;
-    if (input.horaInicio) data.hora_inicio = new Date(`1970-01-01T${input.horaInicio}:00Z`);
-    if (input.horaFin) data.hora_fin = new Date(`1970-01-01T${input.horaFin}:00Z`);
+    if (input.horaInicio)
+      data.hora_inicio = new Date(`1970-01-01T${input.horaInicio}:00Z`);
+    if (input.horaFin)
+      data.hora_fin = new Date(`1970-01-01T${input.horaFin}:00Z`);
 
     const updated = await this.prisma.disponibilidad_enfermero.update({
       where: { id: input.id },
@@ -79,8 +94,7 @@ export class DisponibilidadEnfermeroService {
     hora_fin: Date;
     activo: boolean;
   }): DisponibilidadEnfermero {
-    const toTimeStr = (d: Date) =>
-      d.toISOString().substring(11, 19); // "HH:MM:SS"
+    const toTimeStr = (d: Date) => d.toISOString().substring(11, 19); // "HH:MM:SS"
     return {
       id: r.id,
       enfermeroId: r.enfermero_id,
