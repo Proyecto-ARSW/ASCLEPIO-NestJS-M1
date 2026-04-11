@@ -19,6 +19,12 @@ import * as Joi from 'joi';
         // RABBITMQ_URL opcional: si no está configurado, el módulo RabbitMQ arranca
         // con fallback a localhost y reintenta la conexión sin bloquear el bootstrap.
         RABBITMQ_URL: Joi.string().default('amqp://localhost:5672'),
+        // FIELD_ENCRYPTION_KEY: clave para cifrado AES-256-GCM de campos PHI.
+        // Opcional en desarrollo; en producción (Azure App Service) debe configurarse
+        // como Application Setting para cumplir Ley 1581/2012 y HIPAA.
+        // Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        FIELD_ENCRYPTION_KEY: Joi.string().min(32).optional(),
+        FIELD_ENCRYPTION_SALT: Joi.string().optional(),
       }),
       validationOptions: {
         allowUnknown: true,

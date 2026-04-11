@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../shared/prisma/prisma.service';
+import { EncryptionService } from '../shared/encryption/encryption.service';
 import { CreatePatientInput } from './dto/create-patient.input';
 import { UpdatePatientInput } from './dto/update-patient.input';
 import { Patient } from './entities/patient.entity';
@@ -12,12 +13,20 @@ const includeUsuario = { usuarios: true } as const;
 
 @Injectable()
 export class PatientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // EncryptionService es global (@Global en EncryptionModule) — no necesita
+    // ser declarado en PatientsModule; NestJS lo resuelve automáticamente.
+    private readonly enc: EncryptionService,
+  ) {}
 
   async create(input: CreatePatientInput): Promise<Patient> {
     if (input.numeroDocumento) {
+      // Búsqueda por HMAC determinístico: mismo plaintext → mismo hash,
+      // aunque el ciphertext AES-GCM sea diferente cada vez (IV aleatorio).
+      const hmac = this.enc.hmac(input.numeroDocumento);
       const existing = await this.prisma.pacientes.findUnique({
-        where: { numero_documento: input.numeroDocumento },
+        where: { numero_documento_hmac: hmac },
       });
 
       if (existing) {
@@ -31,11 +40,14 @@ export class PatientsService {
       data: {
         usuario_id: input.usuarioId,
         fecha_nacimiento: input.fechaNacimiento,
-        tipo_sangre: input.tipoSangre,
-        numero_documento: input.numeroDocumento,
+        // Ciframos antes de escribir — la BD nunca ve el dato en plaintext
+        tipo_sangre: this.enc.encryptOrNull(input.tipoSangre),
+        numero_documento: this.enc.encryptOrNull(input.numeroDocumento),
+        numero_documento_hmac: this.enc.hmacOrNull(input.numeroDocumento),
         tipo_documento: input.tipoDocumento ?? 'CC',
         eps: input.eps,
-        alergias: input.alergias,
+        // alergias es PHI crítico: un médico de urgencias necesita saberlas
+        alergias: this.enc.encryptOrNull(input.alergias),
       },
       include: includeUsuario,
     });
@@ -49,6 +61,7 @@ export class PatientsService {
       include: includeUsuario,
     });
 
+    // mapToEntity descifra los campos PHI antes de devolver al resolver
     return patients.map((p) => this.mapToEntity(p));
   }
 
@@ -69,9 +82,11 @@ export class PatientsService {
     await this.findOne(id);
 
     if (input.numeroDocumento) {
+      // Igual que en create: buscar por HMAC para detectar duplicado
+      const hmac = this.enc.hmac(input.numeroDocumento);
       const conflict = await this.prisma.pacientes.findFirst({
         where: {
-          numero_documento: input.numeroDocumento,
+          numero_documento_hmac: hmac,
           NOT: { id },
         },
       });
@@ -90,15 +105,21 @@ export class PatientsService {
         ...(input.fechaNacimiento !== undefined && {
           fecha_nacimiento: input.fechaNacimiento,
         }),
-        ...(input.tipoSangre !== undefined && { tipo_sangre: input.tipoSangre }),
+        ...(input.tipoSangre !== undefined && {
+          tipo_sangre: this.enc.encryptOrNull(input.tipoSangre),
+        }),
         ...(input.numeroDocumento !== undefined && {
-          numero_documento: input.numeroDocumento,
+          numero_documento: this.enc.encryptOrNull(input.numeroDocumento),
+          // Siempre actualizar el HMAC junto con el ciphertext
+          numero_documento_hmac: this.enc.hmacOrNull(input.numeroDocumento),
         }),
         ...(input.tipoDocumento !== undefined && {
           tipo_documento: input.tipoDocumento,
         }),
         ...(input.eps !== undefined && { eps: input.eps }),
-        ...(input.alergias !== undefined && { alergias: input.alergias }),
+        ...(input.alergias !== undefined && {
+          alergias: this.enc.encryptOrNull(input.alergias),
+        }),
       },
       include: includeUsuario,
     });
@@ -142,12 +163,15 @@ export class PatientsService {
       email: record.usuarios.email,
       telefono: record.usuarios.telefono ?? undefined,
       fechaNacimiento: record.fecha_nacimiento ?? undefined,
-      tipoSangre: record.tipo_sangre ?? undefined,
-      numeroDocumento: record.numero_documento ?? undefined,
+      // Desciframos al leer — el resolver y el cliente reciben el plaintext
+      tipoSangre: this.enc.decryptOrNull(record.tipo_sangre) ?? undefined,
+      numeroDocumento: this.enc.decryptOrNull(record.numero_documento) ?? undefined,
       tipoDocumento: record.tipo_documento ?? undefined,
       eps: record.eps ?? undefined,
-      alergias: record.alergias ?? undefined,
+      alergias: this.enc.decryptOrNull(record.alergias) ?? undefined,
       creadoEn: record.creado_en,
     };
   }
 }
+
+// Daniel Useche
