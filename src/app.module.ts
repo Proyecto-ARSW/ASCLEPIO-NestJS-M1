@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -22,10 +23,33 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { EncryptionModule } from './shared/encryption/encryption.module';
 
 @Module({
   imports: [
     ConfigModuleCustom,
+    /**
+     * ThrottlerModule limita la cantidad de requests por IP en una ventana de tiempo.
+     * Se definen dos perfiles:
+     * - "default": 100 req/min — tráfico normal de la app
+     * - "auth": 10 req/15min — endpoints de login/register para frenar brute-force
+     * El ThrottlerGuard registrado como APP_GUARD aplica el perfil "default" a
+     * todos los endpoints; los endpoints críticos sobreescriben con @Throttle({ auth: ... })
+     */
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 100,
+      },
+      {
+        name: 'auth',
+        ttl: 900_000,
+        limit: 10,
+      },
+    ]),
+    EncryptionModule,
     RabbitmqModule,
     AuthModule,
     UsersModule,
@@ -76,6 +100,16 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     ConsentimientosModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    // ThrottlerGuard como guard global: aplica rate limiting a todos los endpoints REST.
+    // Las mutations GraphQL no pasan por ThrottlerGuard por defecto (no tienen req HTTP
+    // estándar), por lo que la protección principal aplica sobre /auth/login y /auth/register.
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
+
+// Daniel Useche

@@ -1,5 +1,6 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -20,13 +21,20 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * @Throttle({ auth: ... }) sobreescribe el perfil "default" (100/min) con el
+   * perfil "auth" (10 req / 15 min por IP). Si un atacante supera ese límite,
+   * NestJS responde 429 Too Many Requests automáticamente.
+   */
   @Post('register')
+  @Throttle({ auth: { ttl: 900_000, limit: 10 } })
   @RegisterDocs()
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
+  @Throttle({ auth: { ttl: 900_000, limit: 10 } })
   @LoginDocs()
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
@@ -55,3 +63,5 @@ export class AuthController {
     return this.authService.joinHospital(user, dto);
   }
 }
+
+// Daniel Useche
