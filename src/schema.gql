@@ -999,7 +999,11 @@ type Query {
   medicine(id: Int!): Medicine!
 
   """Lista medicamentos del catálogo. Por defecto solo activos."""
-  medicines(soloActivos: Boolean = true): [Medicine!]!
+  medicines(
+    """Texto para filtrar por nombre comercial o genérico (case-insensitive)"""
+    busqueda: String
+    soloActivos: Boolean = true
+  ): [Medicine!]!
 
   """Perfil de paciente del usuario autenticado, o null si no tiene perfil"""
   myPatientProfile: Patient

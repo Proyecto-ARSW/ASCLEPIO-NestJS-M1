@@ -22,6 +22,7 @@ import { SelectHospitalDto } from './dto/select-hospital.dto';
 import { JoinHospitalDto } from './dto/join-hospital.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
+import { EncryptionService } from 'src/shared/encryption/encryption.service';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly rabbitmqService: RabbitmqService,
+    // EncryptionService es global (@Global en EncryptionModule) — disponible sin importar el módulo
+    private readonly enc: EncryptionService,
   ) {}
 
   // ── REGISTRO ─────────────────────────────────────────────────────────────────
@@ -126,11 +129,16 @@ export class AuthService {
           data: {
             usuario_id: nuevoUsuario.id,
             fecha_nacimiento: dto.pacienteData?.fechaNacimiento,
-            tipo_sangre: dto.pacienteData?.tipoSangre,
-            numero_documento: dto.pacienteData?.numeroDocumento,
+            tipo_sangre: this.enc.encryptOrNull(dto.pacienteData?.tipoSangre),
+            numero_documento: this.enc.encryptOrNull(
+              dto.pacienteData?.numeroDocumento,
+            ),
+            numero_documento_hmac: this.enc.hmacOrNull(
+              dto.pacienteData?.numeroDocumento,
+            ),
             tipo_documento: dto.pacienteData?.tipoDocumento ?? 'CC',
             eps: dto.pacienteData?.eps,
-            alergias: dto.pacienteData?.alergias,
+            alergias: this.enc.encryptOrNull(dto.pacienteData?.alergias),
           },
         });
       } else if (rol === RolUsuario.MEDICO && dto.medicoData) {
