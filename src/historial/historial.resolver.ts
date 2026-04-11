@@ -22,7 +22,8 @@ export class HistorialResolver {
 
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN)
   @Mutation(() => HistorialMedico, {
-    description: 'Crea un registro en el historial médico de un paciente (MEDICO/ADMIN)',
+    description:
+      'Crea un registro en el historial médico de un paciente (MEDICO/ADMIN)',
   })
   createHistorial(
     @Args('input') input: CreateHistorialInput,
@@ -33,7 +34,8 @@ export class HistorialResolver {
   @Auth()
   @Query(() => [HistorialMedico], {
     name: 'historialByPaciente',
-    description: 'Historial médico completo de un paciente (ordenado del más reciente al más antiguo)',
+    description:
+      'Historial médico completo de un paciente (ordenado del más reciente al más antiguo)',
   })
   findByPaciente(
     @Args('pacienteId', { type: () => ID }) pacienteId: string,
@@ -44,7 +46,8 @@ export class HistorialResolver {
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN)
   @Query(() => [HistorialMedico], {
     name: 'historialByMedico',
-    description: 'Registros de historial generados por un médico (MEDICO/ADMIN)',
+    description:
+      'Registros de historial generados por un médico (MEDICO/ADMIN)',
   })
   findByMedico(
     @Args('medicoId', { type: () => ID }) medicoId: string,
@@ -57,7 +60,9 @@ export class HistorialResolver {
     name: 'historial',
     description: 'Busca un registro de historial médico por ID',
   })
-  findOne(@Args('id', { type: () => ID }) id: string): Promise<HistorialMedico> {
+  findOne(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<HistorialMedico> {
     return this.historialService.findOne(id);
   }
 

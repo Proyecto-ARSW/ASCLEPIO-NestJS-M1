@@ -1,7 +1,9 @@
 import { InputType, Field, Int, ID } from '@nestjs/graphql';
 import { IsUUID, IsInt, IsString, Min, Max } from 'class-validator';
 
-@InputType({ description: 'Datos para crear un bloque de disponibilidad de enfermero' })
+@InputType({
+  description: 'Datos para crear un bloque de disponibilidad de enfermero',
+})
 export class CreateDisponibilidadEnfermeroInput {
   @IsUUID()
   @Field(() => ID, { description: 'ID del enfermero' })

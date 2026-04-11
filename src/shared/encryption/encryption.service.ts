@@ -48,7 +48,8 @@ export class EncryptionService implements OnModuleInit {
       return;
     }
 
-    const salt = this.config.get<string>('FIELD_ENCRYPTION_SALT') ?? 'asclepio-v1';
+    const salt =
+      this.config.get<string>('FIELD_ENCRYPTION_SALT') ?? 'asclepio-v1';
 
     // scryptSync deriva claves de longitud fija desde una clave arbitraria.
     // Usamos dos salts distintos para obtener dos claves independientes (AES y HMAC).
@@ -115,7 +116,9 @@ export class EncryptionService implements OnModuleInit {
    */
   hmac(value: string): string {
     if (!this.enabled) return value;
-    return createHmac('sha256', this.hmacKey).update(value, 'utf8').digest('hex');
+    return createHmac('sha256', this.hmacKey)
+      .update(value, 'utf8')
+      .digest('hex');
   }
 
   hmacOrNull(value: string | null | undefined): string | null {

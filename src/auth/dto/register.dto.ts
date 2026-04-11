@@ -19,12 +19,15 @@ export class MedicoDataDto {
   @ApiProperty({ example: 1, description: 'ID de la especialidad médica' })
   @IsInt()
   @Min(1)
-  especialidadId: number;
+  especialidadId!: number;
 
-  @ApiProperty({ example: 'RM-2024-001', description: 'Número de registro médico único' })
+  @ApiProperty({
+    example: 'RM-2024-001',
+    description: 'Número de registro médico único',
+  })
   @IsString()
   @MaxLength(50)
-  numeroRegistro: string;
+  numeroRegistro!: string;
 
   @ApiPropertyOptional({ example: 'Consultorio 301' })
   @IsOptional()
@@ -69,17 +72,26 @@ export class PacienteDataDto {
 }
 
 export class EnfermeroDataDto {
-  @ApiProperty({ example: 'ENF-2024-001', description: 'Número de registro profesional' })
+  @ApiProperty({
+    example: 'ENF-2024-001',
+    description: 'Número de registro profesional',
+  })
   @IsString()
   @MaxLength(50)
-  numeroRegistro: string;
+  numeroRegistro!: string;
 
-  @ApiProperty({ example: 1, description: 'ID del nivel de formación (FK formacion)' })
+  @ApiProperty({
+    example: 1,
+    description: 'ID del nivel de formación (FK formacion)',
+  })
   @IsInt()
   @Min(1)
-  nivelFormacion: number;
+  nivelFormacion!: number;
 
-  @ApiPropertyOptional({ example: 2, description: 'ID del área de especialización (FK especialidades)' })
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'ID del área de especialización (FK especialidades)',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -100,20 +112,20 @@ export class EnfermeroDataDto {
 export class RegisterDto {
   @ApiProperty({ example: 'Juan', description: 'Nombre del usuario' })
   @IsString()
-  nombre: string;
+  nombre!: string;
 
   @ApiProperty({ example: 'García', description: 'Apellido del usuario' })
   @IsString()
-  apellido: string;
+  apellido!: string;
 
   @ApiProperty({ example: 'juan.garcia@hospital.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'Password123!', minLength: 6 })
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
 
   @ApiPropertyOptional({ example: '+57 300 123 4567' })
   @IsOptional()
@@ -140,21 +152,32 @@ export class RegisterDto {
   @Min(1)
   hospitalId?: number;
 
-  @ApiPropertyOptional({ type: MedicoDataDto, description: 'Requerido si rol = MEDICO' })
+  @ApiPropertyOptional({
+    type: MedicoDataDto,
+    description: 'Requerido si rol = MEDICO',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => MedicoDataDto)
   medicoData?: MedicoDataDto;
 
-  @ApiPropertyOptional({ type: PacienteDataDto, description: 'Opcional si rol = PACIENTE' })
+  @ApiPropertyOptional({
+    type: PacienteDataDto,
+    description: 'Opcional si rol = PACIENTE',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => PacienteDataDto)
   pacienteData?: PacienteDataDto;
 
-  @ApiPropertyOptional({ type: EnfermeroDataDto, description: 'Requerido si rol = ENFERMERO' })
+  @ApiPropertyOptional({
+    type: EnfermeroDataDto,
+    description: 'Requerido si rol = ENFERMERO',
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => EnfermeroDataDto)
   enfermeroData?: EnfermeroDataDto;
 }
+
+// Daniel Useche

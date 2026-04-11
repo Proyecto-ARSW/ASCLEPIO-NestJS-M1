@@ -19,20 +19,24 @@ export const CreateHospitalDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: 'Crear hospital',
-      description: 'Crea un nuevo hospital en el sistema. **Requiere rol ADMIN.**',
+      description:
+        'Crea un nuevo hospital en el sistema. **Requiere rol ADMIN.**',
     }),
     ApiResponse({ status: 201, description: 'Hospital creado exitosamente.' }),
     ApiBadRequestResponse({ description: 'Datos inválidos o faltantes.' }),
     ApiConflictResponse({ description: 'Ya existe un hospital con ese NIT.' }),
     ApiUnauthorizedResponse({ description: 'JWT inválido o expirado.' }),
-    ApiForbiddenResponse({ description: 'Solo administradores pueden crear hospitales.' }),
+    ApiForbiddenResponse({
+      description: 'Solo administradores pueden crear hospitales.',
+    }),
   );
 
 export const FindAllHospitalsDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: 'Listar hospitales',
-      description: 'Retorna todos los hospitales. Sin autenticación. Usar `soloActivos=true` para filtrar.',
+      description:
+        'Retorna todos los hospitales. Sin autenticación. Usar `soloActivos=true` para filtrar.',
     }),
     ApiQuery({
       name: 'soloActivos',
@@ -69,10 +73,14 @@ export const ToggleActivoDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: 'Activar / desactivar hospital',
-      description: 'Alterna el estado `activo` del hospital. **Requiere rol ADMIN.**',
+      description:
+        'Alterna el estado `activo` del hospital. **Requiere rol ADMIN.**',
     }),
     ApiParam({ name: 'id', type: Number, description: 'ID del hospital' }),
-    ApiResponse({ status: 200, description: 'Estado alternado correctamente.' }),
+    ApiResponse({
+      status: 200,
+      description: 'Estado alternado correctamente.',
+    }),
     ApiNotFoundResponse({ description: 'Hospital no encontrado.' }),
     ApiUnauthorizedResponse({ description: 'JWT inválido o expirado.' }),
     ApiForbiddenResponse({ description: 'Solo administradores.' }),

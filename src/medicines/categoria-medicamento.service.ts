@@ -17,7 +17,9 @@ export class CategoriaMedicamentoService {
       where: { nombre: input.nombre },
     });
     if (existing) {
-      throw new ConflictException(`Ya existe una categoría con el nombre "${input.nombre}"`);
+      throw new ConflictException(
+        `Ya existe una categoría con el nombre "${input.nombre}"`,
+      );
     }
     const cat = await this.prisma.categorias_medicamento.create({
       data: { nombre: input.nombre },
@@ -33,19 +35,27 @@ export class CategoriaMedicamentoService {
   }
 
   async findOne(id: number): Promise<CategoriaMedicamento> {
-    const cat = await this.prisma.categorias_medicamento.findUnique({ where: { id } });
-    if (!cat) throw new NotFoundException(`Categoría con ID "${id}" no encontrada`);
+    const cat = await this.prisma.categorias_medicamento.findUnique({
+      where: { id },
+    });
+    if (!cat)
+      throw new NotFoundException(`Categoría con ID "${id}" no encontrada`);
     return { id: cat.id, nombre: cat.nombre };
   }
 
-  async update(id: number, input: UpdateCategoriaInput): Promise<CategoriaMedicamento> {
+  async update(
+    id: number,
+    input: UpdateCategoriaInput,
+  ): Promise<CategoriaMedicamento> {
     await this.findOne(id);
     if (input.nombre) {
       const conflict = await this.prisma.categorias_medicamento.findFirst({
         where: { nombre: input.nombre, NOT: { id } },
       });
       if (conflict) {
-        throw new ConflictException(`El nombre "${input.nombre}" ya está en uso por otra categoría`);
+        throw new ConflictException(
+          `El nombre "${input.nombre}" ya está en uso por otra categoría`,
+        );
       }
     }
     const updated = await this.prisma.categorias_medicamento.update({

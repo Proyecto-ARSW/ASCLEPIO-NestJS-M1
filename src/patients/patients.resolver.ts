@@ -57,7 +57,12 @@ export class PatientsResolver {
    * Lista todos los pacientes — dato PHI sensible.
    * Solo personal clínico y administrativo puede ver el listado completo.
    */
-  @Auth(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.ENFERMERO, RolUsuario.RECEPCIONISTA)
+  @Auth(
+    RolUsuario.ADMIN,
+    RolUsuario.MEDICO,
+    RolUsuario.ENFERMERO,
+    RolUsuario.RECEPCIONISTA,
+  )
   @Query(() => [Patient], {
     name: 'patients',
     description: 'Retorna todos los pacientes registrados',
@@ -90,7 +95,8 @@ export class PatientsResolver {
   @Query(() => Patient, {
     name: 'myPatientProfile',
     nullable: true,
-    description: 'Perfil de paciente del usuario autenticado, o null si no tiene perfil',
+    description:
+      'Perfil de paciente del usuario autenticado, o null si no tiene perfil',
   })
   myPatientProfile(@CurrentUser() user: JwtPayload): Promise<Patient | null> {
     return this.patientsService.findByUserId(user.sub);

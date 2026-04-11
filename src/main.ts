@@ -14,7 +14,8 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
-  const frontendUrl = configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+  const frontendUrl =
+    configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
   const isProduction = process.env.NODE_ENV === 'production';
 
   /**
@@ -31,7 +32,12 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           // Apollo Sandbox y GraphQL Playground requieren inline scripts
-          scriptSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net', 'embeddable-sandbox.cdn.apollographql.com'],
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'cdn.jsdelivr.net',
+            'embeddable-sandbox.cdn.apollographql.com',
+          ],
           styleSrc: ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
           imgSrc: ["'self'", 'data:', 'cdn.jsdelivr.net'],
           connectSrc: ["'self'", frontendUrl],
@@ -77,9 +83,12 @@ async function bootstrap() {
   const logger = app.get(Logger);
   logger.log(`API running on port :${port}`, 'Bootstrap');
   logger.log(`Swagger docs → http://localhost:${port}/docs`, 'Bootstrap');
-  logger.log(`GraphQL playground → http://localhost:${port}/graphql`, 'Bootstrap');
+  logger.log(
+    `GraphQL playground → http://localhost:${port}/graphql`,
+    'Bootstrap',
+  );
 }
 
-bootstrap();
+void bootstrap();
 
 // Daniel Useche

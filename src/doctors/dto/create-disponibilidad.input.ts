@@ -11,22 +11,31 @@ export class CreateDisponibilidadInput {
   @IsInt()
   @Min(0)
   @Max(6)
-  @Field(() => Int, { description: '0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb' })
+  @Field(() => Int, {
+    description: '0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb',
+  })
   diaSemana: number;
 
   @IsDate()
   @Type(() => Date)
-  @Field({ description: 'Hora de inicio del bloque (solo se usa la porción HH:MM)' })
+  @Field({
+    description: 'Hora de inicio del bloque (solo se usa la porción HH:MM)',
+  })
   horaInicio: Date;
 
   @IsDate()
   @Type(() => Date)
-  @Field({ description: 'Hora de fin del bloque (solo se usa la porción HH:MM)' })
+  @Field({
+    description: 'Hora de fin del bloque (solo se usa la porción HH:MM)',
+  })
   horaFin: Date;
 
   @IsInt()
   @Min(1)
   @IsOptional()
-  @Field(() => Int, { defaultValue: 30, description: 'Duración de cada cita en minutos' })
+  @Field(() => Int, {
+    defaultValue: 30,
+    description: 'Duración de cada cita en minutos',
+  })
   duracionCita: number;
 }

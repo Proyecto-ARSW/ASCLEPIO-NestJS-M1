@@ -178,7 +178,8 @@ export class PatientsService {
       fechaNacimiento: record.fecha_nacimiento ?? undefined,
       // Desciframos al leer — el resolver y el cliente reciben el plaintext
       tipoSangre: this.enc.decryptOrNull(record.tipo_sangre) ?? undefined,
-      numeroDocumento: this.enc.decryptOrNull(record.numero_documento) ?? undefined,
+      numeroDocumento:
+        this.enc.decryptOrNull(record.numero_documento) ?? undefined,
       tipoDocumento: record.tipo_documento ?? undefined,
       eps: record.eps ?? undefined,
       alergias: this.enc.decryptOrNull(record.alergias) ?? undefined,

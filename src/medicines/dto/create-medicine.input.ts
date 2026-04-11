@@ -12,7 +12,9 @@ import {
 export class CreateMedicineInput {
   @IsString()
   @MaxLength(150)
-  @Field({ description: 'Nombre comercial del medicamento (máx. 150 caracteres)' })
+  @Field({
+    description: 'Nombre comercial del medicamento (máx. 150 caracteres)',
+  })
   nombreComercial: string;
 
   @IsOptional()
@@ -24,7 +26,10 @@ export class CreateMedicineInput {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Field(() => Int, { nullable: true, description: 'ID de la categoría de medicamento' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'ID de la categoría de medicamento',
+  })
   categoriaId?: number;
 
   @IsOptional()
@@ -45,11 +50,18 @@ export class CreateMedicineInput {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  @Field({ nullable: true, description: 'Presentación (tabletas, jarabe, ampolla, etc.)' })
+  @Field({
+    nullable: true,
+    description: 'Presentación (tabletas, jarabe, ampolla, etc.)',
+  })
   presentacion?: string;
 
   @IsOptional()
   @IsBoolean()
-  @Field({ nullable: true, defaultValue: true, description: '¿Requiere receta médica? (default: true)' })
+  @Field({
+    nullable: true,
+    defaultValue: true,
+    description: '¿Requiere receta médica? (default: true)',
+  })
   requiereReceta?: boolean;
 }

@@ -33,7 +33,8 @@ export class DisponibilidadResolver {
   @Auth()
   @Query(() => [DisponibilidadMedico], {
     name: 'disponibilidadesByDoctor',
-    description: 'Retorna todos los bloques de disponibilidad de un médico, ordenados por día y hora',
+    description:
+      'Retorna todos los bloques de disponibilidad de un médico, ordenados por día y hora',
   })
   findByDoctor(
     @Args('medicoId', { type: () => ID }) medicoId: string,
@@ -59,7 +60,8 @@ export class DisponibilidadResolver {
    */
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN)
   @Mutation(() => DisponibilidadMedico, {
-    description: 'Actualiza horarios o estado activo de un bloque de disponibilidad',
+    description:
+      'Actualiza horarios o estado activo de un bloque de disponibilidad',
   })
   updateDisponibilidad(
     @Args('input') input: UpdateDisponibilidadInput,

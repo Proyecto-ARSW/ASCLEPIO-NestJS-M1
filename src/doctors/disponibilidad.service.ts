@@ -13,7 +13,9 @@ import { UpdateDisponibilidadInput } from './dto/update-disponibilidad.input';
 export class DisponibilidadService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(input: CreateDisponibilidadInput): Promise<DisponibilidadMedico> {
+  async create(
+    input: CreateDisponibilidadInput,
+  ): Promise<DisponibilidadMedico> {
     // La FK de la BD valida que el médico exista; solo chequeamos lógica de negocio
     if (input.diaSemana < 0 || input.diaSemana > 6) {
       throw new BadRequestException('diaSemana debe ser un valor entre 0 y 6');
@@ -73,14 +75,18 @@ export class DisponibilidadService {
     return this.mapToEntity(registro);
   }
 
-  async update(input: UpdateDisponibilidadInput): Promise<DisponibilidadMedico> {
+  async update(
+    input: UpdateDisponibilidadInput,
+  ): Promise<DisponibilidadMedico> {
     await this.findOne(input.id);
 
     if (input.horaInicio && input.horaFin) {
       const inicio = new Date(input.horaInicio);
       const fin = new Date(input.horaFin);
       if (fin <= inicio) {
-        throw new BadRequestException('horaFin debe ser posterior a horaInicio');
+        throw new BadRequestException(
+          'horaFin debe ser posterior a horaInicio',
+        );
       }
     }
     if (input.duracionCita !== undefined && input.duracionCita <= 0) {

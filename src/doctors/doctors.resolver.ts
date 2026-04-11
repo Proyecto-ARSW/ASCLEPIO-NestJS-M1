@@ -35,7 +35,8 @@ export class DoctorsResolver {
 
   @Query(() => [Doctor], {
     name: 'doctors',
-    description: 'Retorna médicos activos; opcionalmente filtrados por hospital',
+    description:
+      'Retorna médicos activos; opcionalmente filtrados por hospital',
   })
   findAll(
     @Args('hospitalId', {

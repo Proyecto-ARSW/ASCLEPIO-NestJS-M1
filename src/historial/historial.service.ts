@@ -50,8 +50,11 @@ export class HistorialService {
   }
 
   async findOne(id: string): Promise<HistorialMedico> {
-    const historial = await this.prisma.historial_medico.findUnique({ where: { id } });
-    if (!historial) throw new NotFoundException(`Historial con ID "${id}" no encontrado`);
+    const historial = await this.prisma.historial_medico.findUnique({
+      where: { id },
+    });
+    if (!historial)
+      throw new NotFoundException(`Historial con ID "${id}" no encontrado`);
     return this.mapToEntity(historial);
   }
 
@@ -69,15 +72,23 @@ export class HistorialService {
       currentUser.rol !== RolUsuario.ADMIN &&
       historial.medicoId !== currentUser.sub
     ) {
-      throw new ForbiddenException('Solo el médico autor o un ADMIN pueden modificar este historial');
+      throw new ForbiddenException(
+        'Solo el médico autor o un ADMIN pueden modificar este historial',
+      );
     }
 
     const updated = await this.prisma.historial_medico.update({
       where: { id },
       data: {
-        ...(input.diagnostico !== undefined && { diagnostico: input.diagnostico }),
-        ...(input.tratamiento !== undefined && { tratamiento: input.tratamiento }),
-        ...(input.observaciones !== undefined && { observaciones: input.observaciones }),
+        ...(input.diagnostico !== undefined && {
+          diagnostico: input.diagnostico,
+        }),
+        ...(input.tratamiento !== undefined && {
+          tratamiento: input.tratamiento,
+        }),
+        ...(input.observaciones !== undefined && {
+          observaciones: input.observaciones,
+        }),
       },
     });
     return this.mapToEntity(updated);

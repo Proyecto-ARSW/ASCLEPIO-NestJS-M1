@@ -2,6 +2,13 @@ import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
+type ThrottlerRequest = {
+  [key: string]: any;
+  ip?: string;
+  headers?: Record<string, string | string[] | undefined>;
+  res?: Record<string, any>;
+};
+
 /**
  * AppThrottlerGuard extiende el ThrottlerGuard por defecto para manejar
  * correctamente los tres tipos de contexto que existen en esta app:
@@ -26,9 +33,9 @@ export class AppThrottlerGuard extends ThrottlerGuard {
    * Las suscripciones son conexiones persistentes; no tiene sentido
    * contarlas como peticiones individuales por IP.
    */
-  protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
+  protected shouldSkip(context: ExecutionContext): Promise<boolean> {
     // context.getType() devuelve 'http' | 'graphql' | 'ws' según el adapter
-    return context.getType<string>() === 'ws';
+    return Promise.resolve(context.getType<string>() === 'ws');
   }
 
   /**
@@ -36,22 +43,32 @@ export class AppThrottlerGuard extends ThrottlerGuard {
    * Para GraphQL usamos GqlExecutionContext para acceder al req HTTP subyacente
    * (Apollo recibe la petición HTTP y la expone en ctx.req).
    */
-  getRequestResponse(context: ExecutionContext) {
+  getRequestResponse(context: ExecutionContext): {
+    req: Record<string, any>;
+    res: Record<string, any>;
+  } {
     const type = context.getType<string>();
 
     if (type === 'graphql') {
       // GqlExecutionContext expone el contexto que configura GraphQLModule:
       //   context: ({ req }) => ({ req })    ← app.module.ts
       const gqlCtx = GqlExecutionContext.create(context);
-      const req = gqlCtx.getContext<{ req: Record<string, any> }>().req;
+      const gqlContext = gqlCtx.getContext<{
+        req?: ThrottlerRequest;
+        res?: Record<string, any>;
+      }>();
+      const req = gqlContext.req ?? {};
       // res puede no existir en algunos setups; usamos un objeto vacío como
       // fallback seguro para que res.header() no explote al setear headers.
-      return { req, res: req?.res ?? ({} as Record<string, any>) };
+      return { req, res: gqlContext.res ?? req.res ?? {} };
     }
 
     // Contexto HTTP estándar (REST)
     const http = context.switchToHttp();
-    return { req: http.getRequest(), res: http.getResponse() };
+    return {
+      req: http.getRequest<ThrottlerRequest>(),
+      res: http.getResponse<Record<string, any>>(),
+    };
   }
 
   /**
@@ -61,12 +78,13 @@ export class AppThrottlerGuard extends ThrottlerGuard {
    *   2. x-forwarded-for (cuando hay un proxy/load-balancer delante)
    *   3. 'anonymous' como último recurso (nunca debería llegar aquí en contextos HTTP)
    */
-  async getTracker(req: Record<string, any>): Promise<string> {
-    return (
-      req?.ip ??
-      (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-      'anonymous'
-    );
+  getTracker(req: ThrottlerRequest): Promise<string> {
+    const forwarded = req.headers?.['x-forwarded-for'];
+    const forwardedValue = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    const tracker =
+      req.ip ?? forwardedValue?.split(',')[0]?.trim() ?? 'anonymous';
+
+    return Promise.resolve(tracker);
   }
 }
 

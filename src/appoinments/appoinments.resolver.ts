@@ -53,7 +53,11 @@ export class AppoinmentsResolver {
     @Args('medicoId', { type: () => ID }) medicoId: string,
     @Args('fecha', { nullable: true }) fecha?: Date,
   ): Promise<Appoinment[]> {
-    return this.appoinmentsService.findByDoctor(medicoId, user.hospitalId!, fecha);
+    return this.appoinmentsService.findByDoctor(
+      medicoId,
+      user.hospitalId!,
+      fecha,
+    );
   }
 
   /** Citas de un paciente — ve TODAS sin importar hospital */
@@ -77,28 +81,41 @@ export class AppoinmentsResolver {
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────────
 
-  @Auth(RolUsuario.PACIENTE,RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  @Auth(
+    RolUsuario.PACIENTE,
+    RolUsuario.MEDICO,
+    RolUsuario.ADMIN,
+    RolUsuario.RECEPCIONISTA,
+  )
   @Mutation(() => Appoinment)
-  createAppoinment(@Args('input') input: CreateAppoinmentInput): Promise<Appoinment> {
+  createAppoinment(
+    @Args('input') input: CreateAppoinmentInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.create(input);
   }
 
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Appoinment)
-  updateAppoinment(@Args('input') input: UpdateAppoinmentInput): Promise<Appoinment> {
+  updateAppoinment(
+    @Args('input') input: UpdateAppoinmentInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.update(input.id, input);
   }
 
   @Auth()
   @Mutation(() => Appoinment)
-  cancelAppoinment(@Args('input') input: CancelAppoinmentInput): Promise<Appoinment> {
+  cancelAppoinment(
+    @Args('input') input: CancelAppoinmentInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.cancel(input);
   }
 
   /** Marca una cita como COMPLETADA (atendida). Usado por recepcionista para cierre administrativo. */
   @Auth(RolUsuario.MEDICO, RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Appoinment)
-  completeAppoinment(@Args('id', { type: () => ID }) id: string): Promise<Appoinment> {
+  completeAppoinment(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.complete(id);
   }
 
@@ -114,19 +131,25 @@ export class AppoinmentsResolver {
 
   @Auth(RolUsuario.MEDICO)
   @Mutation(() => Appoinment)
-  extendCurrentAppoinment(@Args('input') input: ExtendAppoinmentInput): Promise<Appoinment> {
+  extendCurrentAppoinment(
+    @Args('input') input: ExtendAppoinmentInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.extendCurrentAppointment(input);
   }
 
   @Auth(RolUsuario.PACIENTE)
   @Mutation(() => Appoinment)
-  confirmSlotOffer(@Args('input') input: ConfirmSlotInput): Promise<Appoinment> {
+  confirmSlotOffer(
+    @Args('input') input: ConfirmSlotInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.confirmSlotOffer(input);
   }
 
   @Auth(RolUsuario.PACIENTE)
   @Mutation(() => Appoinment)
-  rescheduleAppoinment(@Args('input') input: RescheduleAppoinmentInput): Promise<Appoinment> {
+  rescheduleAppoinment(
+    @Args('input') input: RescheduleAppoinmentInput,
+  ): Promise<Appoinment> {
     return this.appoinmentsService.rescheduleAppointment(input);
   }
 
@@ -146,7 +169,9 @@ export class AppoinmentsResolver {
    * Eventos: CANCELADA | POSPUESTA | MOVIDA | SLOT_OFERTADO | CONFIRMADA_SLOT | REAGENDADO_REQUERIDO | REAGENDADA
    */
   @Subscription(() => CitaEvento, { name: 'citaPacienteActualizada' })
-  citaPacienteActualizada(@Args('pacienteId', { type: () => ID }) pacienteId: string) {
+  citaPacienteActualizada(
+    @Args('pacienteId', { type: () => ID }) pacienteId: string,
+  ) {
     return this.pubSub.asyncIterableIterator(`CITA_PACIENTE_${pacienteId}`);
   }
 }

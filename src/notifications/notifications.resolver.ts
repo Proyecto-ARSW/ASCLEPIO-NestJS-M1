@@ -52,7 +52,9 @@ export class NotificationsResolver {
   /** Crear notificación manual (admin o sistema) */
   @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => Notificacion)
-  createNotificacion(@Args('input') input: CreateNotificacionInput): Promise<Notificacion> {
+  createNotificacion(
+    @Args('input') input: CreateNotificacionInput,
+  ): Promise<Notificacion> {
     return this.notificationsService.create(input);
   }
 
@@ -88,7 +90,9 @@ export class NotificationsResolver {
   @Mutation(() => Int, {
     description: 'Retorna el número de notificaciones eliminadas',
   })
-  limpiarNotificacionesLeidas(@CurrentUser() user: JwtPayload): Promise<number> {
+  limpiarNotificacionesLeidas(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<number> {
     return this.notificationsService.removeAllRead(user.sub);
   }
 

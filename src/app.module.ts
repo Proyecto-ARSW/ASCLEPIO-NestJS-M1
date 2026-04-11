@@ -26,6 +26,7 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
+import type { Request } from 'express';
 
 @Module({
   imports: [
@@ -64,7 +65,7 @@ import { EncryptionModule } from './shared/encryption/encryption.module';
           ? true
           : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      context: ({ req }) => ({ req }),
+      context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
       subscriptions: {

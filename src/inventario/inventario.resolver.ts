@@ -20,9 +20,12 @@ export class InventarioResolver {
 
   @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
   @Mutation(() => InventarioMedicamento, {
-    description: 'Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA)',
+    description:
+      'Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA)',
   })
-  createInventario(@Args('input') input: CreateInventarioInput): Promise<InventarioMedicamento> {
+  createInventario(
+    @Args('input') input: CreateInventarioInput,
+  ): Promise<InventarioMedicamento> {
     return this.inventarioService.create(input);
   }
 
@@ -40,7 +43,9 @@ export class InventarioResolver {
     name: 'inventarioBySede',
     description: 'Inventario de medicamentos de una sede específica',
   })
-  findBySede(@Args('sedeId', { type: () => Int }) sedeId: number): Promise<InventarioMedicamento[]> {
+  findBySede(
+    @Args('sedeId', { type: () => Int }) sedeId: number,
+  ): Promise<InventarioMedicamento[]> {
     return this.inventarioService.findBySede(sedeId);
   }
 
@@ -60,7 +65,9 @@ export class InventarioResolver {
     name: 'inventarioItem',
     description: 'Busca un registro de inventario por ID',
   })
-  findOne(@Args('id', { type: () => Int }) id: number): Promise<InventarioMedicamento> {
+  findOne(
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<InventarioMedicamento> {
     return this.inventarioService.findOne(id);
   }
 
@@ -69,7 +76,9 @@ export class InventarioResolver {
     description:
       'Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente.',
   })
-  updateInventario(@Args('input') input: UpdateInventarioInput): Promise<InventarioMedicamento> {
+  updateInventario(
+    @Args('input') input: UpdateInventarioInput,
+  ): Promise<InventarioMedicamento> {
     return this.inventarioService.update(input.id, input);
   }
 
@@ -77,7 +86,9 @@ export class InventarioResolver {
   @Mutation(() => InventarioMedicamento, {
     description: 'Elimina un registro de inventario (ADMIN)',
   })
-  removeInventario(@Args('id', { type: () => Int }) id: number): Promise<InventarioMedicamento> {
+  removeInventario(
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<InventarioMedicamento> {
     return this.inventarioService.remove(id);
   }
 }

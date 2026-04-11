@@ -50,7 +50,10 @@ export class AppoinmentsService {
 
   // ── SLOTS DISPONIBLES ────────────────────────────────────────────────────────
 
-  async getAvailableSlots(medicoId: string, fecha: Date): Promise<SlotDisponible[]> {
+  async getAvailableSlots(
+    medicoId: string,
+    fecha: Date,
+  ): Promise<SlotDisponible[]> {
     const diaSemana = new Date(fecha).getDay();
 
     const disponibilidad = await this.prisma.disponibilidad_medico.findFirst({
@@ -72,7 +75,11 @@ export class AppoinmentsService {
   /** Cálculo puro de slots — sin queries. Reutilizable con datos pre-cargados. */
   private computeSlots(
     fecha: Date,
-    disponibilidad: { hora_inicio: Date; hora_fin: Date; duracion_cita: number },
+    disponibilidad: {
+      hora_inicio: Date;
+      hora_fin: Date;
+      duracion_cita: number;
+    },
     citasExistentes: { fecha_hora: Date; duracion_minutos: number }[],
   ): SlotDisponible[] {
     const duracion = disponibilidad.duracion_cita;
@@ -99,11 +106,14 @@ export class AppoinmentsService {
       if (slotFin > horaFin) break;
 
       const ocupado = citasExistentes.some((c) => {
-        const citaFin = new Date(c.fecha_hora.getTime() + c.duracion_minutos * 60_000);
+        const citaFin = new Date(
+          c.fecha_hora.getTime() + c.duracion_minutos * 60_000,
+        );
         return c.fecha_hora < slotFin && citaFin > cursor;
       });
 
-      if (!ocupado) slots.push({ fechaHora: new Date(cursor), duracionMinutos: duracion });
+      if (!ocupado)
+        slots.push({ fechaHora: new Date(cursor), duracionMinutos: duracion });
       cursor = new Date(cursor.getTime() + duracion * 60_000);
     }
 
@@ -113,34 +123,55 @@ export class AppoinmentsService {
   // ── CRUD BASE ────────────────────────────────────────────────────────────────
 
   async create(input: CreateAppoinmentInput): Promise<Appoinment> {
-    if (input.disponibilidadId === undefined && input.diaSemana === undefined && !input.fechaHora) {
+    if (
+      input.disponibilidadId === undefined &&
+      input.diaSemana === undefined &&
+      !input.fechaHora
+    ) {
       throw new BadRequestException(
         'Debes indicar "disponibilidadId", "diaSemana" (0-6) o "fechaHora" (slot exacto ISO)',
       );
     }
 
-    const paciente = await this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } });
+    const paciente = await this.prisma.pacientes.findUnique({
+      where: { id: input.pacienteId },
+    });
     if (!paciente) {
-      throw new NotFoundException(`Paciente con ID ${input.pacienteId} no encontrado`);
+      throw new NotFoundException(
+        `Paciente con ID ${input.pacienteId} no encontrado`,
+      );
     }
 
-    const medico = await this.prisma.medicos.findUnique({ where: { id: input.medicoId } });
+    const medico = await this.prisma.medicos.findUnique({
+      where: { id: input.medicoId },
+    });
     if (!medico) {
-      throw new NotFoundException(`Médico con ID ${input.medicoId} no encontrado`);
+      throw new NotFoundException(
+        `Médico con ID ${input.medicoId} no encontrado`,
+      );
     }
     if (!medico.activo) {
-      throw new BadRequestException(`El médico con ID ${input.medicoId} no está activo`);
+      throw new BadRequestException(
+        `El médico con ID ${input.medicoId} no está activo`,
+      );
     }
 
     let fechaSlot: Date;
 
     if (input.fechaHora) {
       // ── Opción 1: slot exacto por fecha/hora ISO ──────────────────────────────
-      const slots = await this.getAvailableSlots(input.medicoId, input.fechaHora);
+      const slots = await this.getAvailableSlots(
+        input.medicoId,
+        input.fechaHora,
+      );
       const solicitado = new Date(input.fechaHora).getTime();
-      const slotExacto = slots.find((s) => s.fechaHora.getTime() === solicitado);
+      const slotExacto = slots.find(
+        (s) => s.fechaHora.getTime() === solicitado,
+      );
       if (!slotExacto) {
-        throw new ConflictException('El horario seleccionado no está disponible para este médico');
+        throw new ConflictException(
+          'El horario seleccionado no está disponible para este médico',
+        );
       }
       fechaSlot = input.fechaHora;
     } else if (input.disponibilidadId !== undefined) {
@@ -149,20 +180,28 @@ export class AppoinmentsService {
         where: { id: input.disponibilidadId },
       });
       if (!bloque) {
-        throw new NotFoundException(`Bloque de disponibilidad con ID ${input.disponibilidadId} no encontrado`);
+        throw new NotFoundException(
+          `Bloque de disponibilidad con ID ${input.disponibilidadId} no encontrado`,
+        );
       }
       if (!bloque.activo) {
-        throw new BadRequestException(`El bloque de disponibilidad ${input.disponibilidadId} no está activo`);
+        throw new BadRequestException(
+          `El bloque de disponibilidad ${input.disponibilidadId} no está activo`,
+        );
       }
       if (bloque.medico_id !== input.medicoId) {
-        throw new BadRequestException('El bloque de disponibilidad no pertenece al médico indicado');
+        throw new BadRequestException(
+          'El bloque de disponibilidad no pertenece al médico indicado',
+        );
       }
 
       const fechaDia = this.nextDateForDay(bloque.dia_semana);
       const slots = await this.getAvailableSlots(input.medicoId, fechaDia);
 
       if (slots.length === 0) {
-        throw new ConflictException('No hay slots disponibles en ese bloque de disponibilidad');
+        throw new ConflictException(
+          'No hay slots disponibles en ese bloque de disponibilidad',
+        );
       }
 
       if (input.hora) {
@@ -186,7 +225,9 @@ export class AppoinmentsService {
       const slots = await this.getAvailableSlots(input.medicoId, fechaDia);
 
       if (slots.length === 0) {
-        throw new ConflictException('No hay slots disponibles para ese médico en el día indicado');
+        throw new ConflictException(
+          'No hay slots disponibles para ese médico en el día indicado',
+        );
       }
 
       if (input.hora) {
@@ -241,7 +282,9 @@ export class AppoinmentsService {
       return citas.map((c) => this.mapToEntity(c));
     }
 
-    const citas = await this.prisma.citas.findMany({ orderBy: { fecha_hora: 'asc' } });
+    const citas = await this.prisma.citas.findMany({
+      orderBy: { fecha_hora: 'asc' },
+    });
     return citas.map((c) => this.mapToEntity(c));
   }
 
@@ -254,7 +297,11 @@ export class AppoinmentsService {
   /**
    * Citas de un médico — validando que pertenezca al hospital del usuario.
    */
-  async findByDoctor(medicoId: string, hospitalId: number, fecha?: Date): Promise<Appoinment[]> {
+  async findByDoctor(
+    medicoId: string,
+    hospitalId: number,
+    fecha?: Date,
+  ): Promise<Appoinment[]> {
     const medicoEnHospital = await this.prisma.medicos.findFirst({
       where: {
         id: medicoId,
@@ -264,15 +311,23 @@ export class AppoinmentsService {
       },
     });
     if (!medicoEnHospital) {
-      throw new NotFoundException('El médico no pertenece al hospital actual o no existe');
+      throw new NotFoundException(
+        'El médico no pertenece al hospital actual o no existe',
+      );
     }
 
     const where: Record<string, unknown> = { medico_id: medicoId };
     if (fecha) {
-      where.fecha_hora = { gte: this.startOfDay(fecha), lte: this.endOfDay(fecha) };
+      where.fecha_hora = {
+        gte: this.startOfDay(fecha),
+        lte: this.endOfDay(fecha),
+      };
     }
 
-    const citas = await this.prisma.citas.findMany({ where, orderBy: { fecha_hora: 'asc' } });
+    const citas = await this.prisma.citas.findMany({
+      where,
+      orderBy: { fecha_hora: 'asc' },
+    });
     return citas.map((c) => this.mapToEntity(c));
   }
 
@@ -290,7 +345,9 @@ export class AppoinmentsService {
     const cita = await this.prisma.citas.update({
       where: { id },
       data: {
-        ...(input.notasMedico !== undefined && { notas_medico: input.notasMedico }),
+        ...(input.notasMedico !== undefined && {
+          notas_medico: input.notasMedico,
+        }),
         ...(input.motivo !== undefined && { motivo: input.motivo }),
         actualizado_en: new Date(),
       },
@@ -301,9 +358,12 @@ export class AppoinmentsService {
   // ── CANCELACIÓN ──────────────────────────────────────────────────────────────
 
   async cancel(input: CancelAppoinmentInput): Promise<Appoinment> {
-    const cita = await this.prisma.citas.findUnique({ where: { id: input.id } });
+    const cita = await this.prisma.citas.findUnique({
+      where: { id: input.id },
+    });
     if (!cita) throw new NotFoundException(`Cita "${input.id}" no encontrada`);
-    if (cita.estado === 'CANCELADA') throw new BadRequestException('La cita ya está cancelada');
+    if (cita.estado === 'CANCELADA')
+      throw new BadRequestException('La cita ya está cancelada');
 
     const usuarioIdCancelador = await this.resolveUsuarioId(input.canceladaPor);
 
@@ -320,7 +380,11 @@ export class AppoinmentsService {
     const entity = this.mapToEntity(updated);
 
     await this.pubSub.publish(CANAL_MEDICO(cita.medico_id), {
-      citaActualizada: { tipo: 'CANCELADA', cita: entity, mensaje: input.motivoCancelacion },
+      citaActualizada: {
+        tipo: 'CANCELADA',
+        cita: entity,
+        mensaje: input.motivoCancelacion,
+      },
     });
     await this.pubSub.publish(CANAL_PACIENTE(cita.paciente_id), {
       citaPacienteActualizada: {
@@ -330,9 +394,17 @@ export class AppoinmentsService {
       },
     });
 
-    await this.ofrecerSlotLiberado(cita.medico_id, cita.fecha_hora, cita.duracion_minutos, cita.id);
+    await this.ofrecerSlotLiberado(
+      cita.medico_id,
+      cita.fecha_hora,
+      cita.duracion_minutos,
+      cita.id,
+    );
 
-    void this.rabbitmqService.notifyAppointmentCancelled(input.id, input.motivoCancelacion ?? undefined);
+    void this.rabbitmqService.notifyAppointmentCancelled(
+      input.id,
+      input.motivoCancelacion ?? undefined,
+    );
 
     return entity;
   }
@@ -378,7 +450,11 @@ export class AppoinmentsService {
 
   // ── POSPONER ─────────────────────────────────────────────────────────────────
 
-  async postpone(id: string, nuevaFechaHora: Date, motivo?: string): Promise<Appoinment> {
+  async postpone(
+    id: string,
+    nuevaFechaHora: Date,
+    motivo?: string,
+  ): Promise<Appoinment> {
     const cita = await this.prisma.citas.findUnique({ where: { id } });
     if (!cita) throw new NotFoundException(`Cita "${id}" no encontrada`);
 
@@ -407,18 +483,29 @@ export class AppoinmentsService {
       },
     });
 
-    await this.ofrecerSlotLiberado(cita.medico_id, slotOriginal, cita.duracion_minutos, cita.id);
+    await this.ofrecerSlotLiberado(
+      cita.medico_id,
+      slotOriginal,
+      cita.duracion_minutos,
+      cita.id,
+    );
 
     return entity;
   }
 
   // ── EXTENDER ─────────────────────────────────────────────────────────────────
 
-  async extendCurrentAppointment(input: ExtendAppoinmentInput): Promise<Appoinment> {
-    const cita = await this.prisma.citas.findUnique({ where: { id: input.id } });
+  async extendCurrentAppointment(
+    input: ExtendAppoinmentInput,
+  ): Promise<Appoinment> {
+    const cita = await this.prisma.citas.findUnique({
+      where: { id: input.id },
+    });
     if (!cita) throw new NotFoundException(`Cita "${input.id}" no encontrada`);
     if (input.minutosAdicionales <= 0) {
-      throw new BadRequestException('Los minutos adicionales deben ser positivos');
+      throw new BadRequestException(
+        'Los minutos adicionales deben ser positivos',
+      );
     }
 
     const diaSemana = cita.fecha_hora.getDay();
@@ -457,7 +544,10 @@ export class AppoinmentsService {
     const citasSiguientes = await this.prisma.citas.findMany({
       where: {
         medico_id: cita.medico_id,
-        fecha_hora: { gt: cita.fecha_hora, lte: this.endOfDay(cita.fecha_hora) },
+        fecha_hora: {
+          gt: cita.fecha_hora,
+          lte: this.endOfDay(cita.fecha_hora),
+        },
         estado: { in: ['PENDIENTE', 'CONFIRMADA'] },
         id: { not: cita.id },
       },
@@ -465,16 +555,24 @@ export class AppoinmentsService {
     });
 
     // Preload de pacientes: 1 query para todo el loop en lugar de 1 por iteración
-    const uniquePacienteIds = [...new Set(citasSiguientes.map((c) => c.paciente_id))];
+    const uniquePacienteIds = [
+      ...new Set(citasSiguientes.map((c) => c.paciente_id)),
+    ];
     const pacientesPreload = await this.prisma.pacientes.findMany({
       where: { id: { in: uniquePacienteIds } },
       select: { id: true, usuario_id: true },
     });
-    const pacienteMap = new Map(pacientesPreload.map((p) => [p.id, p.usuario_id]));
+    const pacienteMap = new Map(
+      pacientesPreload.map((p) => [p.id, p.usuario_id]),
+    );
 
     for (const sig of citasSiguientes) {
-      const nuevaFecha = new Date(sig.fecha_hora.getTime() + input.minutosAdicionales * 60_000);
-      const nuevaFin = new Date(nuevaFecha.getTime() + sig.duracion_minutos * 60_000);
+      const nuevaFecha = new Date(
+        sig.fecha_hora.getTime() + input.minutosAdicionales * 60_000,
+      );
+      const nuevaFin = new Date(
+        nuevaFecha.getTime() + sig.duracion_minutos * 60_000,
+      );
 
       if (horaFinDia && nuevaFin > horaFinDia) {
         await this.prisma.citas.update({
@@ -482,10 +580,15 @@ export class AppoinmentsService {
           data: { estado: 'POSPUESTA', actualizado_en: new Date() },
         });
 
-        const slotsDisponibles = await this.getSlotsProximos(sig.medico_id, cita.fecha_hora);
+        const slotsDisponibles = await this.getSlotsProximos(
+          sig.medico_id,
+          cita.fecha_hora,
+        );
 
         await this.notificationsService.create({
-          usuarioId: pacienteMap.get(sig.paciente_id) ?? (await this.getUsuarioIdPorPaciente(sig.paciente_id)),
+          usuarioId:
+            pacienteMap.get(sig.paciente_id) ??
+            (await this.getUsuarioIdPorPaciente(sig.paciente_id)),
           titulo: 'Reagendamiento requerido',
           mensaje:
             'Tu cita no pudo realizarse hoy por extensión de consultas anteriores. ' +
@@ -494,7 +597,11 @@ export class AppoinmentsService {
           referenciaId: sig.id,
         });
 
-        const sigEntity = this.mapToEntity({ ...sig, estado: 'POSPUESTA', actualizado_en: new Date() });
+        const sigEntity = this.mapToEntity({
+          ...sig,
+          estado: 'POSPUESTA',
+          actualizado_en: new Date(),
+        });
 
         await this.pubSub.publish(CANAL_PACIENTE(sig.paciente_id), {
           citaPacienteActualizada: {
@@ -513,7 +620,11 @@ export class AppoinmentsService {
           data: { fecha_hora: nuevaFecha, actualizado_en: new Date() },
         });
 
-        const sigEntity = this.mapToEntity({ ...sig, fecha_hora: nuevaFecha, actualizado_en: new Date() });
+        const sigEntity = this.mapToEntity({
+          ...sig,
+          fecha_hora: nuevaFecha,
+          actualizado_en: new Date(),
+        });
 
         await this.pubSub.publish(CANAL_PACIENTE(sig.paciente_id), {
           citaPacienteActualizada: {
@@ -534,16 +645,30 @@ export class AppoinmentsService {
   // ── CONFIRMAR SLOT OFERTADO ──────────────────────────────────────────────────
 
   async confirmSlotOffer(input: ConfirmSlotInput): Promise<Appoinment> {
-    const notif = await this.prisma.notificaciones.findUnique({ where: { id: input.notificacionId } });
-    if (!notif || notif.tipo !== 'SLOT_DISPONIBLE') throw new NotFoundException('Oferta de slot no encontrada');
-    if (notif.leida) throw new BadRequestException('Esta oferta ya fue procesada o ha expirado');
+    const notif = await this.prisma.notificaciones.findUnique({
+      where: { id: input.notificacionId },
+    });
+    if (!notif || notif.tipo !== 'SLOT_DISPONIBLE')
+      throw new NotFoundException('Oferta de slot no encontrada');
+    if (notif.leida)
+      throw new BadRequestException(
+        'Esta oferta ya fue procesada o ha expirado',
+      );
 
-    const citaLiberada = await this.prisma.citas.findUnique({ where: { id: notif.referencia_id! } });
-    if (!citaLiberada) throw new NotFoundException('El slot ya no está disponible');
+    const citaLiberada = await this.prisma.citas.findUnique({
+      where: { id: notif.referencia_id! },
+    });
+    if (!citaLiberada)
+      throw new NotFoundException('El slot ya no está disponible');
 
-    const paciente = await this.prisma.pacientes.findFirst({ where: { usuario_id: notif.usuario_id } });
+    const paciente = await this.prisma.pacientes.findFirst({
+      where: { usuario_id: notif.usuario_id },
+    });
     if (!paciente) throw new NotFoundException('Paciente no encontrado');
-    if (paciente.id !== input.pacienteId) throw new BadRequestException('No estás autorizado para confirmar esta oferta');
+    if (paciente.id !== input.pacienteId)
+      throw new BadRequestException(
+        'No estás autorizado para confirmar esta oferta',
+      );
 
     const citaPaciente = await this.prisma.citas.findFirst({
       where: {
@@ -554,21 +679,36 @@ export class AppoinmentsService {
       },
       orderBy: { fecha_hora: 'asc' },
     });
-    if (!citaPaciente) throw new NotFoundException('No se encontró una cita activa para este paciente');
+    if (!citaPaciente)
+      throw new NotFoundException(
+        'No se encontró una cita activa para este paciente',
+      );
 
     const [updated] = await this.prisma.$transaction([
       this.prisma.citas.update({
         where: { id: citaPaciente.id },
-        data: { fecha_hora: citaLiberada.fecha_hora, actualizado_en: new Date() },
+        data: {
+          fecha_hora: citaLiberada.fecha_hora,
+          actualizado_en: new Date(),
+        },
       }),
-      this.prisma.notificaciones.update({ where: { id: input.notificacionId }, data: { leida: true } }),
+      this.prisma.notificaciones.update({
+        where: { id: input.notificacionId },
+        data: { leida: true },
+      }),
     ]);
 
     const entity = this.mapToEntity(updated);
 
-    await this.pubSub.publish(CANAL_MEDICO(citaPaciente.medico_id), { citaActualizada: { tipo: 'MOVIDA', cita: entity } });
+    await this.pubSub.publish(CANAL_MEDICO(citaPaciente.medico_id), {
+      citaActualizada: { tipo: 'MOVIDA', cita: entity },
+    });
     await this.pubSub.publish(CANAL_PACIENTE(paciente.id), {
-      citaPacienteActualizada: { tipo: 'CONFIRMADA_SLOT', cita: entity, mensaje: 'Has confirmado el nuevo horario.' },
+      citaPacienteActualizada: {
+        tipo: 'CONFIRMADA_SLOT',
+        cita: entity,
+        mensaje: 'Has confirmado el nuevo horario.',
+      },
     });
 
     return entity;
@@ -576,15 +716,26 @@ export class AppoinmentsService {
 
   // ── REAGENDAR ────────────────────────────────────────────────────────────────
 
-  async rescheduleAppointment(input: RescheduleAppoinmentInput): Promise<Appoinment> {
-    const cita = await this.prisma.citas.findUnique({ where: { id: input.citaId } });
+  async rescheduleAppointment(
+    input: RescheduleAppoinmentInput,
+  ): Promise<Appoinment> {
+    const cita = await this.prisma.citas.findUnique({
+      where: { id: input.citaId },
+    });
     if (!cita) throw new NotFoundException('Cita no encontrada');
-    if (cita.estado !== 'POSPUESTA') throw new BadRequestException('Solo se pueden reagendar citas en estado POSPUESTA');
+    if (cita.estado !== 'POSPUESTA')
+      throw new BadRequestException(
+        'Solo se pueden reagendar citas en estado POSPUESTA',
+      );
 
-    const slots = await this.getAvailableSlots(cita.medico_id, input.nuevaFechaHora);
+    const slots = await this.getAvailableSlots(
+      cita.medico_id,
+      input.nuevaFechaHora,
+    );
     const solicitado = new Date(input.nuevaFechaHora).getTime();
     const valido = slots.some((s) => s.fechaHora.getTime() === solicitado);
-    if (!valido) throw new ConflictException('El horario seleccionado no está disponible');
+    if (!valido)
+      throw new ConflictException('El horario seleccionado no está disponible');
 
     const updated = await this.prisma.citas.update({
       where: { id: input.citaId },
@@ -598,7 +749,9 @@ export class AppoinmentsService {
 
     const entity = this.mapToEntity(updated);
 
-    await this.pubSub.publish(CANAL_MEDICO(cita.medico_id), { citaActualizada: { tipo: 'REAGENDADA', cita: entity } });
+    await this.pubSub.publish(CANAL_MEDICO(cita.medico_id), {
+      citaActualizada: { tipo: 'REAGENDADA', cita: entity },
+    });
     await this.pubSub.publish(CANAL_PACIENTE(cita.paciente_id), {
       citaPacienteActualizada: {
         tipo: 'REAGENDADA',
@@ -652,7 +805,10 @@ export class AppoinmentsService {
     });
   }
 
-  private async getSlotsProximos(medicoId: string, desde: Date): Promise<SlotDisponible[]> {
+  private async getSlotsProximos(
+    medicoId: string,
+    desde: Date,
+  ): Promise<SlotDisponible[]> {
     // 1 query: todas las disponibilidades del médico
     const disponibilidades = await this.prisma.disponibilidad_medico.findMany({
       where: { medico_id: medicoId, activo: true },
@@ -687,7 +843,9 @@ export class AppoinmentsService {
 
       const inicioD = this.startOfDay(fecha);
       const finD = this.endOfDay(fecha);
-      const citasDia = citasRango.filter((c) => c.fecha_hora >= inicioD && c.fecha_hora <= finD);
+      const citasDia = citasRango.filter(
+        (c) => c.fecha_hora >= inicioD && c.fecha_hora <= finD,
+      );
 
       for (const bloque of disp) {
         const slots = this.computeSlots(fecha, bloque, citasDia);
@@ -699,7 +857,9 @@ export class AppoinmentsService {
   }
 
   private async getUsuarioIdPorPaciente(pacienteId: string): Promise<string> {
-    const paciente = await this.prisma.pacientes.findUnique({ where: { id: pacienteId } });
+    const paciente = await this.prisma.pacientes.findUnique({
+      where: { id: pacienteId },
+    });
     if (!paciente) throw new NotFoundException('Paciente no encontrado');
     return paciente.usuario_id;
   }
@@ -708,15 +868,23 @@ export class AppoinmentsService {
     // 3 queries en paralelo en lugar de secuenciales
     const [usuario, medico, paciente] = await Promise.all([
       this.prisma.usuarios.findUnique({ where: { id }, select: { id: true } }),
-      this.prisma.medicos.findUnique({ where: { id }, select: { usuario_id: true } }),
-      this.prisma.pacientes.findUnique({ where: { id }, select: { usuario_id: true } }),
+      this.prisma.medicos.findUnique({
+        where: { id },
+        select: { usuario_id: true },
+      }),
+      this.prisma.pacientes.findUnique({
+        where: { id },
+        select: { usuario_id: true },
+      }),
     ]);
 
     if (usuario) return id;
     if (medico) return medico.usuario_id;
     if (paciente) return paciente.usuario_id;
 
-    throw new BadRequestException(`El ID "${id}" no corresponde a ningún usuario, médico o paciente`);
+    throw new BadRequestException(
+      `El ID "${id}" no corresponde a ningún usuario, médico o paciente`,
+    );
   }
 
   private nextDateForDay(diaSemana: number): Date {

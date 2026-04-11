@@ -56,10 +56,7 @@ export class AuthController {
   @ApiBearerAuth('JWT-preToken')
   @JoinHospitalDocs()
   @UseGuards(JwtAuthGuard)
-  joinHospital(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: JoinHospitalDto,
-  ) {
+  joinHospital(@CurrentUser() user: JwtPayload, @Body() dto: JoinHospitalDto) {
     return this.authService.joinHospital(user, dto);
   }
 }

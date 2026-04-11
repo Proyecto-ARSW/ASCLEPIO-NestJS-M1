@@ -18,7 +18,10 @@ import { RegisterDto } from 'src/auth/dto/register.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
 import { SelectHospitalDto } from 'src/auth/dto/select-hospital.dto';
 import { JoinHospitalDto } from 'src/auth/dto/join-hospital.dto';
-import { AuthResponseDto, LoginResponseDto } from 'src/auth/dto/auth-response.dto';
+import {
+  AuthResponseDto,
+  LoginResponseDto,
+} from 'src/auth/dto/auth-response.dto';
 
 export const RegisterDocs = () =>
   applyDecorators(
@@ -41,7 +44,8 @@ El \`hospitalId\` es siempre **requerido** para vincular el usuario al hospital 
     ApiBody({ type: RegisterDto }),
     ApiResponse({
       status: 201,
-      description: 'Usuario creado exitosamente. Retorna JWT con hospital seleccionado.',
+      description:
+        'Usuario creado exitosamente. Retorna JWT con hospital seleccionado.',
       type: AuthResponseDto,
     }),
     ApiBadRequestResponse({
@@ -49,7 +53,8 @@ El \`hospitalId\` es siempre **requerido** para vincular el usuario al hospital 
         'Datos incompletos: medicoData o enfermeroData faltantes según el rol, o validaciones fallidas.',
     }),
     ApiConflictResponse({
-      description: 'El email, número de registro médico o de enfermero ya existe.',
+      description:
+        'El email, número de registro médico o de enfermero ya existe.',
     }),
     ApiNotFoundResponse({
       description: 'El hospitalId no corresponde a un hospital activo.',
@@ -72,7 +77,8 @@ Valida las credenciales del usuario y retorna:
     ApiBody({ type: LoginDto }),
     ApiResponse({
       status: 200,
-      description: 'Credenciales válidas. Retorna preToken y lista de hospitales.',
+      description:
+        'Credenciales válidas. Retorna preToken y lista de hospitales.',
       type: LoginResponseDto,
     }),
     ApiUnauthorizedResponse({
@@ -98,14 +104,18 @@ operaciones protegidas del sistema.
     ApiBody({ type: SelectHospitalDto }),
     ApiResponse({
       status: 201,
-      description: 'JWT de sesión completo emitido con el hospital seleccionado.',
+      description:
+        'JWT de sesión completo emitido con el hospital seleccionado.',
       type: AuthResponseDto,
     }),
     ApiUnauthorizedResponse({ description: 'preToken inválido o expirado.' }),
-    ApiNotFoundResponse({ description: 'El hospital no existe o está inactivo.' }),
+    ApiNotFoundResponse({
+      description: 'El hospital no existe o está inactivo.',
+    }),
     ApiResponse({
       status: 403,
-      description: 'El usuario no está inscrito en este hospital. Usar /auth/join-hospital primero.',
+      description:
+        'El usuario no está inscrito en este hospital. Usar /auth/join-hospital primero.',
     }),
   );
 
@@ -124,10 +134,14 @@ seleccionar el nuevo hospital en \`POST /auth/select-hospital\`.
     ApiBody({ type: JoinHospitalDto }),
     ApiResponse({
       status: 201,
-      description: 'Inscripción exitosa. Hacer login para acceder al nuevo hospital.',
+      description:
+        'Inscripción exitosa. Hacer login para acceder al nuevo hospital.',
       schema: {
         properties: {
-          mensaje: { type: 'string', example: 'Inscripción exitosa en "Hospital X".' },
+          mensaje: {
+            type: 'string',
+            example: 'Inscripción exitosa en "Hospital X".',
+          },
           hospital: {
             properties: {
               id: { type: 'number' },
