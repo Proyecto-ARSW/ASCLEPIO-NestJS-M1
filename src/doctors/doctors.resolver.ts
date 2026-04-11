@@ -7,6 +7,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 @Resolver(() => Doctor)
 export class DoctorsResolver {
