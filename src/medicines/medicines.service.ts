@@ -26,9 +26,19 @@ export class MedicinesService {
     return this.mapToEntity(med);
   }
 
-  async findAll(soloActivos = true): Promise<Medicine[]> {
+  async findAll(soloActivos = true, busqueda?: string): Promise<Medicine[]> {
     const meds = await this.prisma.medicamentos.findMany({
-      where: soloActivos ? { activo: true } : undefined,
+      where: {
+        ...(soloActivos ? { activo: true } : {}),
+        ...(busqueda
+          ? {
+              OR: [
+                { nombre_comercial: { contains: busqueda, mode: 'insensitive' as const } },
+                { nombre_generico: { contains: busqueda, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { nombre_comercial: 'asc' },
     });
     return meds.map((m) => this.mapToEntity(m));

@@ -56,10 +56,12 @@ export class AppoinmentsService {
   ): Promise<SlotDisponible[]> {
     const diaSemana = new Date(fecha).getDay();
 
-    const disponibilidad = await this.prisma.disponibilidad_medico.findFirst({
+    // findMany en lugar de findFirst: un médico puede tener múltiples bloques
+    // de disponibilidad en el mismo día (ej. mañana 8-12, tarde 14-18)
+    const bloques = await this.prisma.disponibilidad_medico.findMany({
       where: { medico_id: medicoId, dia_semana: diaSemana, activo: true },
     });
-    if (!disponibilidad) return [];
+    if (bloques.length === 0) return [];
 
     const citasExistentes = await this.prisma.citas.findMany({
       where: {
@@ -69,7 +71,12 @@ export class AppoinmentsService {
       },
     });
 
-    return this.computeSlots(fecha, disponibilidad, citasExistentes);
+    // Unir slots de todos los bloques y ordenar cronológicamente
+    const allSlots = bloques.flatMap((bloque) =>
+      this.computeSlots(fecha, bloque, citasExistentes),
+    );
+    allSlots.sort((a, b) => a.fechaHora.getTime() - b.fechaHora.getTime());
+    return allSlots;
   }
 
   /** Cálculo puro de slots — sin queries. Reutilizable con datos pre-cargados. */
@@ -353,6 +360,8 @@ export class AppoinmentsService {
     const cita = await this.prisma.citas.update({
       where: { id },
       data: {
+        // Transicionar estado PENDIENTE → CONFIRMADA al actualizar la cita
+        ...(marcarConfirmada && { estado: EstadoCita.CONFIRMADA }),
         ...(input.notasMedico !== undefined && {
           notas_medico: input.notasMedico,
         }),
