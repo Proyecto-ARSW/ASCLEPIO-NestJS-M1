@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { DoctorsService } from './doctors.service';
 import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorInput } from './dto/create-doctor.input';
@@ -35,10 +35,17 @@ export class DoctorsResolver {
 
   @Query(() => [Doctor], {
     name: 'doctors',
-    description: 'Retorna todos los médicos activos',
+    description: 'Retorna médicos activos; opcionalmente filtrados por hospital',
   })
-  findAll(): Promise<Doctor[]> {
-    return this.doctorsService.findAll();
+  findAll(
+    @Args('hospitalId', {
+      type: () => Int,
+      nullable: true,
+      description: 'ID del hospital para filtrar médicos vinculados',
+    })
+    hospitalId?: number,
+  ): Promise<Doctor[]> {
+    return this.doctorsService.findAll(hospitalId);
   }
 
   @Query(() => Doctor, {
@@ -51,3 +58,5 @@ export class DoctorsResolver {
     return this.doctorsService.findOne(id);
   }
 }
+
+// Daniel Useche
