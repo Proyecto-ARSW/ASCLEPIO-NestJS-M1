@@ -43,7 +43,7 @@ export class EncryptionService implements OnModuleInit {
       // Esto permite un despliegue gradual sin romper datos existentes.
       this.logger.warn(
         'FIELD_ENCRYPTION_KEY no definida — cifrado de campos PHI DESACTIVADO. ' +
-          'Configura esta variable en producción para cumplir con Ley 1581/2012.',
+          'Configurar esta variable en producción para cumplir con Ley 1581/2012.',
       );
       return;
     }
