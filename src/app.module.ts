@@ -23,7 +23,8 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 
 @Module({
@@ -106,7 +107,7 @@ import { EncryptionModule } from './shared/encryption/encryption.module';
     // estándar), por lo que la protección principal aplica sobre /auth/login y /auth/register.
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: AppThrottlerGuard,
     },
   ],
 })
