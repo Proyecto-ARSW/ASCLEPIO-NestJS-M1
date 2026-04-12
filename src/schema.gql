@@ -678,7 +678,7 @@ type Mutation {
   createHistorial(input: CreateHistorialInput!): HistorialMedico!
 
   """
-  Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA)
+  Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA/ENFERMERO)
   """
   createInventario(input: CreateInventarioInput!): InventarioMedicamento!
 
@@ -794,12 +794,17 @@ type Mutation {
   updateHistorial(input: UpdateHistorialInput!): HistorialMedico!
 
   """
-  Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente.
+  Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente. (ADMIN/RECEPCIONISTA/ENFERMERO)
   """
   updateInventario(input: UpdateInventarioInput!): InventarioMedicamento!
 
   """Actualiza un medicamento del catálogo (ADMIN)"""
   updateMedicine(input: UpdateMedicineInput!): Medicine!
+
+  """
+  Actualiza nombre, apellido o teléfono del usuario autenticado. No requiere rol especial.
+  """
+  updateMyProfile(input: UpdateMyProfileInput!): User!
 
   """Actualiza los datos de un enfermero (ADMIN)"""
   updateNurse(input: UpdateNurseInput!): Nurse!
@@ -1027,6 +1032,12 @@ type Query {
 
   """Retorna todos los pacientes registrados"""
   patients: [Patient!]!
+
+  """Retorna los pacientes vinculados a un hospital específico"""
+  patientsByHospital(
+    """ID del hospital"""
+    hospitalId: Int!
+  ): [Patient!]!
 
   """Busca una receta por ID"""
   receta(id: Int!): Receta!
@@ -1333,6 +1344,18 @@ input UpdateMedicineInput {
 
   """¿Requiere receta médica? (default: true)"""
   requiereReceta: Boolean = true
+}
+
+"""Datos para actualizar el perfil propio (nombre, apellido, teléfono)"""
+input UpdateMyProfileInput {
+  """Apellido del usuario"""
+  apellido: String
+
+  """Nombre del usuario"""
+  nombre: String
+
+  """Teléfono de contacto"""
+  telefono: String
 }
 
 """Datos para actualizar el perfil de un enfermero"""
