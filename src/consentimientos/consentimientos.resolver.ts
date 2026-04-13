@@ -33,7 +33,14 @@ export class ConsentimientosResolver {
     return this.consentimientosService.create(input);
   }
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.RECEPCIONISTA)
+  // PACIENTE incluido: el paciente tiene derecho a consultar sus propios
+  // consentimientos (Ley 23/1981 Art. 15 Colombia).
+  @Auth(
+    RolUsuario.ADMIN,
+    RolUsuario.MEDICO,
+    RolUsuario.RECEPCIONISTA,
+    RolUsuario.PACIENTE,
+  )
   @Query(() => [ConsentimientoPaciente], {
     name: 'consentimientosByPaciente',
     description: 'Lista todos los consentimientos de un paciente',
@@ -66,7 +73,13 @@ export class ConsentimientosResolver {
     return this.consentimientosService.update(input.id, input);
   }
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.MEDICO, RolUsuario.RECEPCIONISTA)
+  // PACIENTE incluido: puede revocar su propio consentimiento en cualquier momento
+  @Auth(
+    RolUsuario.ADMIN,
+    RolUsuario.MEDICO,
+    RolUsuario.RECEPCIONISTA,
+    RolUsuario.PACIENTE,
+  )
   @Mutation(() => ConsentimientoPaciente, {
     description:
       'Revoca un consentimiento de paciente (registra fecha de revocación)',
