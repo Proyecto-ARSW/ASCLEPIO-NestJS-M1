@@ -26,15 +26,20 @@ CREATE TABLE usuarios (
 );
 
 CREATE TABLE pacientes (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id          UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    fecha_nacimiento    DATE,
-    tipo_sangre         VARCHAR(5),
-    numero_documento    VARCHAR(20) UNIQUE,
-    tipo_documento      VARCHAR(20) DEFAULT 'CC',
-    eps                 VARCHAR(100),
-    alergias            TEXT,
-    creado_en           TIMESTAMP NOT NULL DEFAULT NOW()
+    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    usuario_id               UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    fecha_nacimiento         DATE,
+    -- Valor cifrado AES-256-GCM: formato "iv_hex:authTag_hex:ciphertext_hex"
+    -- VARCHAR(200) cubre el overhead del cifrado (~70 chars para valores cortos)
+    tipo_sangre              VARCHAR(200),
+    numero_documento         VARCHAR(200),
+    -- HMAC-SHA256 del numero_documento en plaintext. Determinístico: permite
+    -- búsquedas indexadas sin exponer el dato real. UNIQUE reemplaza al de numero_documento.
+    numero_documento_hmac    VARCHAR(64) UNIQUE,
+    tipo_documento           VARCHAR(20) DEFAULT 'CC',
+    eps                      VARCHAR(100),
+    alergias                 TEXT,
+    creado_en                TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 
@@ -191,14 +196,12 @@ CREATE TABLE turnos (
     -- UNIQUE inline removido por comportamiento de NULLs en Postgres
 );
 
--- Índices parciales para manejar correctamente NULLs en medico_id
-CREATE UNIQUE INDEX idx_turnos_unique_con_medico
-    ON turnos(fecha, numero_turno, medico_id)
-    WHERE medico_id IS NOT NULL;
+-- Unicidad real del número de turno por hospital y día
+CREATE UNIQUE INDEX idx_turnos_unique_hospital_fecha_numero
+    ON turnos(hospital_id, fecha, numero_turno)
+    WHERE hospital_id IS NOT NULL;
 
-CREATE UNIQUE INDEX idx_turnos_unique_sin_medico
-    ON turnos(fecha, numero_turno)
-    WHERE medico_id IS NULL;
+CREATE INDEX idx_turnos_hospital_fecha_estado ON turnos(hospital_id, fecha, estado);
 
 CREATE INDEX idx_turnos_fecha_estado ON turnos(fecha, estado);
 CREATE INDEX idx_turnos_paciente     ON turnos(paciente_id);
@@ -369,3 +372,33 @@ INSERT INTO formacion (nombre, descripcion) VALUES
 INSERT INTO sedes (nombre, direccion, ciudad) VALUES
 ('Sede Principal', 'Calle 1 # 2-3',      'Bogotá'),
 ('Sede Norte',     'Carrera 15 # 80-20', 'Bogotá');
+
+INSERT INTO hospitales (
+    nombre,
+    nit,
+    departamento,
+    ciudad,
+    direccion,
+    telefono,
+    email_contacto,
+    tipo_institucion,
+    capacidad_urgencias,
+    numero_consultorios,
+    latitud,
+    longitud,
+    activo
+) VALUES (
+    'Hospital Central de El Cerrito',
+    '900123456-7',
+    'Valle del Cauca',
+    'El Cerrito',
+    'Calle 5 #10-20',
+    '+57 3123456789',
+    'contacto@hospitalcerrito.com',
+    'Pública',
+    50,
+    20,
+    3.6851,
+    -76.3132,
+    TRUE
+);

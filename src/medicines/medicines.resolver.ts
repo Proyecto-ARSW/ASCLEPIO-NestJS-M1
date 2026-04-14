@@ -18,10 +18,10 @@ export class MedicinesResolver {
   constructor(private readonly medicinesService: MedicinesService) {}
 
   @Auth(RolUsuario.ADMIN)
-  @Mutation(() => Medicine, { description: 'Crea un medicamento en el catálogo (ADMIN)' })
-  createMedicine(
-    @Args('input') input: CreateMedicineInput,
-  ): Promise<Medicine> {
+  @Mutation(() => Medicine, {
+    description: 'Crea un medicamento en el catálogo (ADMIN)',
+  })
+  createMedicine(@Args('input') input: CreateMedicineInput): Promise<Medicine> {
     return this.medicinesService.create(input);
   }
 
@@ -31,31 +31,37 @@ export class MedicinesResolver {
     description: 'Lista medicamentos del catálogo. Por defecto solo activos.',
   })
   findAll(
-    @Args('soloActivos', { type: () => Boolean, nullable: true, defaultValue: true })
+    @Args('soloActivos', {
+      type: () => Boolean,
+      nullable: true,
+      defaultValue: true,
+    })
     soloActivos: boolean,
   ): Promise<Medicine[]> {
     return this.medicinesService.findAll(soloActivos);
   }
 
   @Auth()
-  @Query(() => Medicine, { name: 'medicine', description: 'Busca un medicamento por ID' })
-  findOne(
-    @Args('id', { type: () => Int }) id: number,
-  ): Promise<Medicine> {
+  @Query(() => Medicine, {
+    name: 'medicine',
+    description: 'Busca un medicamento por ID',
+  })
+  findOne(@Args('id', { type: () => Int }) id: number): Promise<Medicine> {
     return this.medicinesService.findOne(id);
   }
 
   @Auth(RolUsuario.ADMIN)
-  @Mutation(() => Medicine, { description: 'Actualiza un medicamento del catálogo (ADMIN)' })
-  updateMedicine(
-    @Args('input') input: UpdateMedicineInput,
-  ): Promise<Medicine> {
+  @Mutation(() => Medicine, {
+    description: 'Actualiza un medicamento del catálogo (ADMIN)',
+  })
+  updateMedicine(@Args('input') input: UpdateMedicineInput): Promise<Medicine> {
     return this.medicinesService.update(input.id, input);
   }
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => Medicine, {
-    description: 'Da de baja lógicamente un medicamento (activo=false). (ADMIN)',
+    description:
+      'Da de baja lógicamente un medicamento (activo=false). (ADMIN)',
   })
   removeMedicine(
     @Args('id', { type: () => Int }) id: number,

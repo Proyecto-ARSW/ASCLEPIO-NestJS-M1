@@ -78,7 +78,9 @@ export class NurseService {
       data: {
         ...(input.numeroRegistro && { numero_registro: input.numeroRegistro }),
         ...(input.nivelFormacion && { nivel_formacion: input.nivelFormacion }),
-        ...(input.areaEspecializacion && { area_especializacion: input.areaEspecializacion }),
+        ...(input.areaEspecializacion && {
+          area_especializacion: input.areaEspecializacion,
+        }),
         ...(input.certificacionTriage !== undefined && {
           certificacion_triage: input.certificacionTriage,
         }),

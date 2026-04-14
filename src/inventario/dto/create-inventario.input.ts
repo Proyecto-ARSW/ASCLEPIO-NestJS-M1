@@ -10,7 +10,10 @@ import { IsInt, IsOptional, IsString, Min } from 'class-validator';
  *   - stock_actual > stock_minimo   → DISPONIBLE
  * No deben enviarse en el input.
  */
-@InputType({ description: 'Datos para registrar un medicamento en el inventario de una sede' })
+@InputType({
+  description:
+    'Datos para registrar un medicamento en el inventario de una sede',
+})
 export class CreateInventarioInput {
   @IsInt()
   @Min(1)
@@ -24,17 +27,27 @@ export class CreateInventarioInput {
 
   @IsInt()
   @Min(0)
-  @Field(() => Int, { defaultValue: 0, description: 'Stock actual (default: 0)' })
+  @Field(() => Int, {
+    defaultValue: 0,
+    description: 'Stock actual (default: 0)',
+  })
   stockActual: number;
 
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Field(() => Int, { nullable: true, defaultValue: 10, description: 'Stock mínimo (default: 10)' })
+  @Field(() => Int, {
+    nullable: true,
+    defaultValue: 10,
+    description: 'Stock mínimo (default: 10)',
+  })
   stockMinimo?: number;
 
   @IsOptional()
   @IsString()
-  @Field({ nullable: true, description: 'Precio del medicamento en esta sede (ej. "15000.50")' })
+  @Field({
+    nullable: true,
+    description: 'Precio del medicamento en esta sede (ej. "15000.50")',
+  })
   precio?: string;
 }

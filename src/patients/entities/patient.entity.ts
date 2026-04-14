@@ -23,13 +23,19 @@ export class Patient {
   @Field({ nullable: true, description: 'Fecha de nacimiento del paciente' })
   fechaNacimiento?: Date;
 
-  @Field({ nullable: true, description: 'Tipo de sangre del paciente (ej. O+, A-)' })
+  @Field({
+    nullable: true,
+    description: 'Tipo de sangre del paciente (ej. O+, A-)',
+  })
   tipoSangre?: string;
 
   @Field({ nullable: true, description: 'Número de documento de identidad' })
   numeroDocumento?: string;
 
-  @Field({ nullable: true, description: 'Tipo de documento (CC, TI, CE, etc.)' })
+  @Field({
+    nullable: true,
+    description: 'Tipo de documento (CC, TI, CE, etc.)',
+  })
   tipoDocumento?: string;
 
   @Field({ nullable: true, description: 'EPS o aseguradora del paciente' })

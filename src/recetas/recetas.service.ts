@@ -33,7 +33,8 @@ export class RecetasService {
 
   async findOne(id: number): Promise<Receta> {
     const receta = await this.prisma.recetas.findUnique({ where: { id } });
-    if (!receta) throw new NotFoundException(`Receta con ID "${id}" no encontrada`);
+    if (!receta)
+      throw new NotFoundException(`Receta con ID "${id}" no encontrada`);
     return this.mapToEntity(receta);
   }
 
@@ -42,11 +43,17 @@ export class RecetasService {
     const updated = await this.prisma.recetas.update({
       where: { id },
       data: {
-        ...(input.medicamentoId !== undefined && { medicamento_id: input.medicamentoId }),
+        ...(input.medicamentoId !== undefined && {
+          medicamento_id: input.medicamentoId,
+        }),
         ...(input.dosis !== undefined && { dosis: input.dosis }),
         ...(input.frecuencia !== undefined && { frecuencia: input.frecuencia }),
-        ...(input.duracionDias !== undefined && { duracion_dias: input.duracionDias }),
-        ...(input.observaciones !== undefined && { observaciones: input.observaciones }),
+        ...(input.duracionDias !== undefined && {
+          duracion_dias: input.duracionDias,
+        }),
+        ...(input.observaciones !== undefined && {
+          observaciones: input.observaciones,
+        }),
       },
     });
     return this.mapToEntity(updated);

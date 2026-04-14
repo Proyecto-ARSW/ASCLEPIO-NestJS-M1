@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -22,11 +23,36 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
+import { EncryptionModule } from './shared/encryption/encryption.module';
+import type { Request } from 'express';
 import { TriageModule } from './triage/triage.module';
 
 @Module({
   imports: [
     ConfigModuleCustom,
+    /**
+     * ThrottlerModule limita la cantidad de requests por IP en una ventana de tiempo.
+     * Se definen dos perfiles:
+     * - "default": 100 req/min — tráfico normal de la app
+     * - "auth": 10 req/15min — endpoints de login/register para frenar brute-force
+     * El ThrottlerGuard registrado como APP_GUARD aplica el perfil "default" a
+     * todos los endpoints; los endpoints críticos sobreescriben con @Throttle({ auth: ... })
+     */
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 500,
+      },
+      {
+        name: 'auth',
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
+    EncryptionModule,
     RabbitmqModule,
     AuthModule,
     UsersModule,
@@ -35,8 +61,12 @@ import { TriageModule } from './triage/triage.module';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      context: ({ req }) => ({ req }),
+      autoSchemaFile:
+        process.env.NODE_ENV === 'production'
+          ? true
+          : join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
       subscriptions: {
@@ -49,9 +79,15 @@ import { TriageModule } from './triage/triage.module';
     MetricsModule,
     LoggerModule.forRoot({
       pinoHttp: {
-        transport: {
-          target: 'pino-pretty',
-        },
+        // pino-pretty solo en desarrollo: formatea logs de forma legible para el
+        // desarrollador. En producción se omite para emitir JSON estructurado puro,
+        // que Azure Monitor / Application Insights pueden ingestar directamente.
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty' }
+            : undefined,
+        // En producción, nivel info es suficiente. debug añade demasiado ruido.
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
       },
     }),
     HealthModule,
@@ -64,6 +100,13 @@ import { TriageModule } from './triage/triage.module';
     TriageModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AppThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
+
+// Daniel Useche

@@ -6,7 +6,10 @@ import {
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { CreateInventarioInput } from './dto/create-inventario.input';
 import { UpdateInventarioInput } from './dto/update-inventario.input';
-import { InventarioMedicamento, DisponibilidadMedicamento } from './entities/inventario-medicamento.entity';
+import {
+  InventarioMedicamento,
+  DisponibilidadMedicamento,
+} from './entities/inventario-medicamento.entity';
 
 @Injectable()
 export class InventarioService {
@@ -59,7 +62,9 @@ export class InventarioService {
     return invs.map((i) => this.mapToEntity(i));
   }
 
-  async findByMedicamento(medicamentoId: number): Promise<InventarioMedicamento[]> {
+  async findByMedicamento(
+    medicamentoId: number,
+  ): Promise<InventarioMedicamento[]> {
     const invs = await this.prisma.inventario_medicamentos.findMany({
       where: { medicamento_id: medicamentoId },
       orderBy: { sede_id: 'asc' },
@@ -68,8 +73,13 @@ export class InventarioService {
   }
 
   async findOne(id: number): Promise<InventarioMedicamento> {
-    const inv = await this.prisma.inventario_medicamentos.findUnique({ where: { id } });
-    if (!inv) throw new NotFoundException(`Registro de inventario con ID "${id}" no encontrado`);
+    const inv = await this.prisma.inventario_medicamentos.findUnique({
+      where: { id },
+    });
+    if (!inv)
+      throw new NotFoundException(
+        `Registro de inventario con ID "${id}" no encontrado`,
+      );
     return this.mapToEntity(inv);
   }
 
@@ -77,13 +87,20 @@ export class InventarioService {
    * Al actualizar stock_actual o stock_minimo el trigger de PostgreSQL
    * recalcula `disponibilidad` y actualiza `actualizado_en` automáticamente.
    */
-  async update(id: number, input: UpdateInventarioInput): Promise<InventarioMedicamento> {
+  async update(
+    id: number,
+    input: UpdateInventarioInput,
+  ): Promise<InventarioMedicamento> {
     await this.findOne(id);
     const updated = await this.prisma.inventario_medicamentos.update({
       where: { id },
       data: {
-        ...(input.stockActual !== undefined && { stock_actual: input.stockActual }),
-        ...(input.stockMinimo !== undefined && { stock_minimo: input.stockMinimo }),
+        ...(input.stockActual !== undefined && {
+          stock_actual: input.stockActual,
+        }),
+        ...(input.stockMinimo !== undefined && {
+          stock_minimo: input.stockMinimo,
+        }),
         ...(input.precio !== undefined && {
           precio: input.precio ?? null,
         }),

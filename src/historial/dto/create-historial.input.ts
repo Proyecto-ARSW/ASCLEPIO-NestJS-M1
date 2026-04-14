@@ -1,7 +1,9 @@
 import { InputType, Field, ID } from '@nestjs/graphql';
 import { IsUUID, IsOptional, IsString } from 'class-validator';
 
-@InputType({ description: 'Datos para crear un registro en el historial médico' })
+@InputType({
+  description: 'Datos para crear un registro en el historial médico',
+})
 export class CreateHistorialInput {
   @IsUUID()
   @Field(() => ID, { description: 'ID del paciente' })
@@ -13,7 +15,10 @@ export class CreateHistorialInput {
 
   @IsOptional()
   @IsUUID()
-  @Field(() => ID, { nullable: true, description: 'ID de la cita médica asociada (opcional)' })
+  @Field(() => ID, {
+    nullable: true,
+    description: 'ID de la cita médica asociada (opcional)',
+  })
   citaId?: string;
 
   @IsOptional()

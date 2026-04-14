@@ -148,11 +148,17 @@ model pacientes {
   id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuario_id               String                     @db.Uuid
   fecha_nacimiento         DateTime?                  @db.Date
-  tipo_sangre              String?                    @db.VarChar(5)
-  numero_documento         String?                    @unique @db.VarChar(20)
+  // tipo_sangre almacena el valor cifrado AES-256-GCM: formato iv:authTag:ciphertext
+  // VarChar(200) cubre el overhead del cifrado (~70 chars para un valor de 5 chars)
+  tipo_sangre              String?                    @db.VarChar(200)
+  // numero_documento guarda el ciphertext; @unique se mueve al campo HMAC abajo
+  numero_documento         String?                    @db.VarChar(200)
+  // numero_documento_hmac: HMAC-SHA256 del número de documento en plaintext.
+  // Determinístico → permite búsquedas exactas con índice sin exponer el dato real.
+  numero_documento_hmac    String?                    @unique @db.VarChar(64)
   tipo_documento           String?                    @default("CC") @db.VarChar(20)
   eps                      String?                    @db.VarChar(100)
-  alergias                 String?
+  alergias                 String? // TEXT — sin límite, cifrado cabe sin restricción de longitud
   creado_en                DateTime                   @default(now()) @db.Timestamp(6)
   citas                    citas[]
   consentimientos_paciente consentimientos_paciente[]
@@ -210,8 +216,8 @@ model turnos {
   medicos         medicos?        @relation(fields: [medico_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pacientes       pacientes       @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([fecha, numero_turno, medico_id], map: "idx_turnos_unique_con_medico", where: raw("(medico_id IS NOT NULL)"))
-  @@unique([fecha, numero_turno], map: "idx_turnos_unique_sin_medico", where: raw("(medico_id IS NULL)"))
+  @@unique([hospital_id, fecha, numero_turno], map: "idx_turnos_unique_hospital_fecha_numero", where: raw("(hospital_id IS NOT NULL)"))
+  @@index([hospital_id, fecha, estado], map: "idx_turnos_hospital_fecha_estado")
   @@index([fecha, estado], map: "idx_turnos_fecha_estado")
   @@index([paciente_id], map: "idx_turnos_paciente")
   @@index([hospital_id], map: "idx_turnos_hospital")

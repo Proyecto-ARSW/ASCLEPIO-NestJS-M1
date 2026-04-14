@@ -35,14 +35,17 @@ export class SedesResolver {
   }
 
   @Auth(RolUsuario.ADMIN)
-  @Mutation(() => Sede, { description: 'Actualiza los datos de una sede (ADMIN)' })
+  @Mutation(() => Sede, {
+    description: 'Actualiza los datos de una sede (ADMIN)',
+  })
   updateSede(@Args('input') input: UpdateSedeInput): Promise<Sede> {
     return this.sedesService.update(input.id, input);
   }
 
   @Auth(RolUsuario.ADMIN)
   @Mutation(() => Sede, {
-    description: 'Elimina físicamente una sede (ADMIN). Falla si tiene inventario asociado.',
+    description:
+      'Elimina físicamente una sede (ADMIN). Falla si tiene inventario asociado.',
   })
   removeSede(@Args('id', { type: () => Int }) id: number): Promise<Sede> {
     return this.sedesService.remove(id);
