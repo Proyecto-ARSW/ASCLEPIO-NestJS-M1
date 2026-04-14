@@ -537,6 +537,50 @@ type ConsentimientoPaciente {
   documentoFirmado: String
 }
 
+type TriagePreliminaryHistory {
+  idpaciente: String!
+  sintomas: [String!]!
+  embarazo: Boolean!
+  antecedentes: [String!]!
+  posiblesCausas: [String!]!
+  comentario: String!
+  nivelPrioridad: Int!
+  comentariosIA: String!
+  advertenciaIA: String!
+}
+
+type TriageComment {
+  id: String!
+  author: String!
+  comment: String!
+  createdAt: String!
+}
+
+type TriageVitalSigns {
+  temperatureC: Float
+  heartRateBpm: Int
+  respiratoryRateBpm: Int
+  systolicBpMmhg: Int
+  diastolicBpMmhg: Int
+  oxygenSaturationPct: Int
+  weightKg: Float
+  heightCm: Float
+}
+
+type TriageProcedure {
+  procedureId: String!
+  patientId: String!
+  transcript: String!
+  inputType: String!
+  preliminaryHistory: TriagePreliminaryHistory!
+  confidenceScore: Float!
+  status: String!
+  vitalSigns: TriageVitalSigns
+  comments: [TriageComment!]
+  createdAt: String
+  updatedAt: String
+}
+
 type Query {
   """Retorna todos los usuarios activos. Requiere rol ADMIN."""
   users: [User!]!
@@ -652,6 +696,17 @@ type Query {
 
   """Busca un consentimiento por ID"""
   consentimiento(id: Int!): ConsentimientoPaciente!
+
+  """Obtiene los procedimientos de triage del paciente autenticado."""
+  triageMyProcedures(limit: Int = 10): [TriageProcedure!]!
+
+  """Obtiene la historia clinica preliminar en formato JSON estructurado."""
+  triagePreliminaryHistory(procedureId: String!): TriagePreliminaryHistory!
+
+  """
+  Obtiene el procedimiento completo de triage para visualizacion clinica.
+  """
+  triageProcedure(procedureId: String!): TriageProcedure!
 }
 
 type Mutation {
@@ -829,6 +884,22 @@ type Mutation {
 
   """Revoca un consentimiento de paciente (registra fecha de revocación)"""
   revocarConsentimiento(id: Int!): ConsentimientoPaciente!
+
+  """
+  Registra sintomas por texto usando el id de paciente del JWT autenticado.
+  """
+  triageCreateFromText(input: TriageTextInput!): TriageProcedure!
+
+  """
+  Registra sintomas por audio (base64) usando el id de paciente del JWT autenticado.
+  """
+  triageCreateFromAudio(input: TriageAudioInput!): TriageProcedure!
+
+  """Actualiza signos vitales del procedimiento (solo enfermero o medico)."""
+  triageUpdateVitalSigns(procedureId: String!, input: TriageVitalSignsInput!): TriageProcedure!
+
+  """Agrega comentario medico al procedimiento."""
+  triageAddComment(procedureId: String!, input: TriageCommentInput!): TriageProcedure!
 }
 
 """Datos para registrar un nuevo usuario"""
@@ -1460,6 +1531,31 @@ input UpdateConsentimientoInput {
 
   """Nueva ruta o URL del documento firmado"""
   documentoFirmado: String
+}
+
+input TriageTextInput {
+  textInput: String!
+}
+
+input TriageAudioInput {
+  audioBase64: String!
+  fileName: String!
+  mimeType: String
+}
+
+input TriageVitalSignsInput {
+  temperatureC: Float
+  heartRateBpm: Int
+  respiratoryRateBpm: Int
+  systolicBpMmhg: Int
+  diastolicBpMmhg: Int
+  oxygenSaturationPct: Int
+  weightKg: Float
+  heightCm: Float
+}
+
+input TriageCommentInput {
+  comment: String!
 }
 
 type Subscription {
