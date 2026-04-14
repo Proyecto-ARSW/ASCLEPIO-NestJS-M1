@@ -4,7 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'path';
+import { join } from 'node:path';
 import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
@@ -22,6 +22,7 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { TriageModule } from './triage/triage.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
+    TriageModule,
   ],
   controllers: [],
   providers: [],
