@@ -28,7 +28,12 @@ interface IsisProcedureResponse {
   confidence_score: number;
   status: string;
   vital_signs?: Record<string, number>;
-  comments?: Array<{ id: string; author: string; comment: string; created_at: string }>;
+  comments?: Array<{
+    id: string;
+    author: string;
+    comment: string;
+    created_at: string;
+  }>;
   created_at?: string;
   updated_at?: string;
 }
@@ -57,7 +62,9 @@ export class TriageService {
     return flattened.length > 0 ? flattened.join('; ') : null;
   }
 
-  private formatObjectErrorDetail(detail: Record<string, unknown>): string | null {
+  private formatObjectErrorDetail(
+    detail: Record<string, unknown>,
+  ): string | null {
     const msg = this.asNonEmptyString(detail.msg);
     if (msg) return msg;
 
@@ -92,12 +99,16 @@ export class TriageService {
   }
 
   private get isisVoiceBaseUrl(): string {
-    return (this.config.get<string>('ISISVOICE_BASE_URL') ?? 'http://localhost:8000').replace(/\/$/, '');
+    return (
+      this.config.get<string>('ISISVOICE_BASE_URL') ?? 'http://localhost:8000'
+    ).replace(/\/$/, '');
   }
 
   private getBearerToken(authorizationHeader?: string): string {
     if (!authorizationHeader) {
-      throw new BadGatewayException('Falta encabezado Authorization para consumir ISISvoice');
+      throw new BadGatewayException(
+        'Falta encabezado Authorization para consumir ISISvoice',
+      );
     }
     return authorizationHeader;
   }
@@ -122,18 +133,24 @@ export class TriageService {
       let detail = `${response.status} ${response.statusText}`;
       try {
         const payload = (await response.json()) as IsisErrorPayload;
-        const parsedDetail = this.formatErrorDetail(payload.detail ?? payload.message);
+        const parsedDetail = this.formatErrorDetail(
+          payload.detail ?? payload.message,
+        );
         if (parsedDetail) {
           detail = parsedDetail;
         }
-      } catch {}
+      } catch {
+        // Response body is not JSON — use the raw status text as detail
+      }
       throw new BadGatewayException(`ISISvoice error: ${detail}`);
     }
 
     return (await response.json()) as T;
   }
 
-  private mapVitalSigns(raw?: Record<string, number>): TriageVitalSigns | undefined {
+  private mapVitalSigns(
+    raw?: Record<string, number>,
+  ): TriageVitalSigns | undefined {
     if (!raw) return undefined;
     return {
       temperatureC: raw.temperature_c,
@@ -170,7 +187,10 @@ export class TriageService {
     };
   }
 
-  async createFromText(textInput: string, authorizationHeader?: string): Promise<TriageProcedure> {
+  async createFromText(
+    textInput: string,
+    authorizationHeader?: string,
+  ): Promise<TriageProcedure> {
     const payload = await this.request<IsisTriageIntakeResponse>(
       '/api/v1/triage/symptoms/text',
       {
@@ -197,7 +217,10 @@ export class TriageService {
     };
   }
 
-  async createFromAudio(input: TriageAudioInput, authorizationHeader?: string): Promise<TriageProcedure> {
+  async createFromAudio(
+    input: TriageAudioInput,
+    authorizationHeader?: string,
+  ): Promise<TriageProcedure> {
     let payload: IsisTriageIntakeResponse;
 
     try {
@@ -219,14 +242,17 @@ export class TriageService {
       );
     } catch (error) {
       const detail = error instanceof Error ? error.message : '';
-      const shouldFallback = detail.includes('Field required') || detail.includes('422');
+      const shouldFallback =
+        detail.includes('Field required') || detail.includes('422');
       if (!shouldFallback) {
         throw error;
       }
 
       const audioBytes = Buffer.from(input.audioBase64, 'base64');
       const formData = new FormData();
-      const audioBlob = new Blob([audioBytes], { type: input.mimeType ?? 'audio/webm' });
+      const audioBlob = new Blob([audioBytes], {
+        type: input.mimeType ?? 'audio/webm',
+      });
       formData.append('audio_file', audioBlob, input.fileName);
 
       payload = await this.request<IsisTriageIntakeResponse>(
@@ -250,7 +276,10 @@ export class TriageService {
     };
   }
 
-  async getMyProcedures(limit: number, authorizationHeader?: string): Promise<TriageProcedure[]> {
+  async getMyProcedures(
+    limit: number,
+    authorizationHeader?: string,
+  ): Promise<TriageProcedure[]> {
     const payload = await this.request<IsisProcedureListResponse>(
       `/api/v1/triage/procedures/me?limit=${encodeURIComponent(limit)}`,
       { method: 'GET' },
@@ -271,7 +300,10 @@ export class TriageService {
     );
   }
 
-  async getProcedure(procedureId: string, authorizationHeader?: string): Promise<TriageProcedure> {
+  async getProcedure(
+    procedureId: string,
+    authorizationHeader?: string,
+  ): Promise<TriageProcedure> {
     const payload = await this.request<IsisProcedureResponse>(
       `/api/v1/triage/procedure/${procedureId}`,
       { method: 'GET' },

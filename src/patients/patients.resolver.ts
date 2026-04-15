@@ -83,8 +83,7 @@ export class PatientsResolver {
   )
   @Query(() => [Patient], {
     name: 'patientsByHospital',
-    description:
-      'Retorna los pacientes vinculados a un hospital específico',
+    description: 'Retorna los pacientes vinculados a un hospital específico',
   })
   findByHospital(
     @Args('hospitalId', { type: () => Int, description: 'ID del hospital' })

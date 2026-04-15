@@ -351,11 +351,17 @@ export class AppoinmentsService {
     const actual = await this.prisma.citas.findUnique({ where: { id } });
     if (!actual) throw new NotFoundException(`Cita "${id}" no encontrada`);
 
-    if (actual.estado === EstadoCita.CANCELADA || actual.estado === EstadoCita.COMPLETADA) {
-      throw new BadRequestException(`No se puede actualizar una cita en estado ${actual.estado}`);
+    const estadoActual = actual.estado as EstadoCita;
+    if (
+      estadoActual === EstadoCita.CANCELADA ||
+      estadoActual === EstadoCita.COMPLETADA
+    ) {
+      throw new BadRequestException(
+        `No se puede actualizar una cita en estado ${actual.estado}`,
+      );
     }
 
-    const marcarConfirmada = actual.estado === EstadoCita.PENDIENTE;
+    const marcarConfirmada = estadoActual === EstadoCita.PENDIENTE;
 
     const cita = await this.prisma.citas.update({
       where: { id },

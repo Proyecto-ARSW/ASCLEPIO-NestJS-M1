@@ -33,8 +33,18 @@ export class MedicinesService {
         ...(busqueda
           ? {
               OR: [
-                { nombre_comercial: { contains: busqueda, mode: 'insensitive' as const } },
-                { nombre_generico: { contains: busqueda, mode: 'insensitive' as const } },
+                {
+                  nombre_comercial: {
+                    contains: busqueda,
+                    mode: 'insensitive' as const,
+                  },
+                },
+                {
+                  nombre_generico: {
+                    contains: busqueda,
+                    mode: 'insensitive' as const,
+                  },
+                },
               ],
             }
           : {}),

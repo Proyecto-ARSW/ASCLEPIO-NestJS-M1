@@ -40,7 +40,8 @@ export class MedicinesResolver {
     @Args('busqueda', {
       type: () => String,
       nullable: true,
-      description: 'Texto para filtrar por nombre comercial o genérico (case-insensitive)',
+      description:
+        'Texto para filtrar por nombre comercial o genérico (case-insensitive)',
     })
     busqueda?: string,
   ): Promise<Medicine[]> {
