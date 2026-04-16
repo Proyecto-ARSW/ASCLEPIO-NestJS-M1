@@ -1,0 +1,1513 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Appoinment {
+  actualizadoEn: DateTime!
+  canceladaPor: ID
+  creadoEn: DateTime!
+  duracionMinutos: Int!
+  estado: EstadoCita!
+  fechaHora: DateTime!
+  id: ID!
+  medicoId: ID!
+  motivo: String
+  motivoCancelacion: String
+  notasMedico: String
+  pacienteId: ID!
+  reagendadaDe: ID
+}
+
+input CancelAppoinmentInput {
+  canceladaPor: ID!
+  id: ID!
+  motivoCancelacion: String
+}
+
+"""Categoría de medicamento (Analgésico, Antibiótico, etc.)"""
+type CategoriaMedicamento {
+  """ID de la categoría"""
+  id: Int!
+
+  """Nombre único de la categoría"""
+  nombre: String!
+}
+
+type CitaEvento {
+  cita: Appoinment!
+  mensaje: String
+  notificacionId: ID
+  slotsDisponibles: [SlotDisponible!]
+  tipo: String!
+}
+
+input ConfirmSlotInput {
+  notificacionId: ID!
+  pacienteId: ID!
+}
+
+"""Consentimiento informado registrado para un paciente"""
+type ConsentimientoPaciente {
+  """¿El paciente otorgó el consentimiento?"""
+  consentimientoOtorgado: Boolean!
+
+  """Ruta o URL del documento firmado (si aplica)"""
+  documentoFirmado: String
+
+  """Fecha y hora en que se registró el consentimiento"""
+  fechaConsentimiento: DateTime!
+
+  """Fecha y hora de revocación (si aplica)"""
+  fechaRevocacion: DateTime
+
+  """ID del consentimiento"""
+  id: Int!
+
+  """ID del paciente al que pertenece el consentimiento"""
+  pacienteId: ID!
+
+  """¿El consentimiento fue revocado?"""
+  revocado: Boolean!
+
+  """Tipo de consentimiento (ej. "Cirugía", "Anestesia", "Tratamiento")"""
+  tipoConsentimiento: String!
+}
+
+input CreateAppoinmentInput {
+  """Día de la semana: 0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int
+
+  """
+  ID del bloque de disponibilidad del médico. Prioridad sobre diaSemana. Combinar con "hora" para elegir un horario exacto dentro del bloque.
+  """
+  disponibilidadId: Int
+
+  """Fecha y hora exacta del slot ISO (máxima prioridad)"""
+  fechaHora: DateTime
+
+  """
+  Hora exacta del slot en formato HH:MM (ej. "09:00"). Requiere disponibilidadId o diaSemana.
+  """
+  hora: String
+  medicoId: ID!
+  motivo: String
+  pacienteId: ID!
+}
+
+"""Datos para crear una categoría de medicamento"""
+input CreateCategoriaInput {
+  """Nombre único de la categoría (máx. 100 caracteres)"""
+  nombre: String!
+}
+
+"""Datos para registrar un consentimiento de paciente"""
+input CreateConsentimientoInput {
+  """¿El paciente otorga el consentimiento?"""
+  consentimientoOtorgado: Boolean!
+
+  """Ruta o URL del documento firmado (opcional)"""
+  documentoFirmado: String
+
+  """ID del paciente"""
+  pacienteId: ID!
+
+  """Tipo de consentimiento (máx. 100 caracteres)"""
+  tipoConsentimiento: String!
+}
+
+"""Datos para crear un bloque de disponibilidad de enfermero"""
+input CreateDisponibilidadEnfermeroInput {
+  """Día de semana (0=Domingo, 6=Sábado)"""
+  diaSemana: Int!
+
+  """ID del enfermero"""
+  enfermeroId: ID!
+
+  """Hora de fin en formato HH:MM (ej. "12:00")"""
+  horaFin: String!
+
+  """Hora de inicio en formato HH:MM (ej. "08:00")"""
+  horaInicio: String!
+}
+
+input CreateDisponibilidadInput {
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Duración de cada cita en minutos"""
+  duracionCita: Int! = 30
+
+  """Hora de fin del bloque (solo se usa la porción HH:MM)"""
+  horaFin: DateTime!
+
+  """Hora de inicio del bloque (solo se usa la porción HH:MM)"""
+  horaInicio: DateTime!
+
+  """ID del médico"""
+  medicoId: ID!
+}
+
+"""Datos requeridos para registrar un nuevo médico"""
+input CreateDoctorInput {
+  """Número o nombre del consultorio (opcional, máx. 20 caracteres)"""
+  consultorio: String
+
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Número de registro médico único (máx. 50 caracteres)"""
+  numeroRegistro: String!
+
+  """ID del usuario al que se asociará el médico"""
+  usuarioId: ID!
+}
+
+"""Datos específicos del perfil de enfermero"""
+input CreateEnfermeroDataInput {
+  """ID del área de especialización (FK a especialidades). Opcional."""
+  areaEspecializacion: Int
+
+  """Indica si el enfermero tiene certificación de triage"""
+  certificacionTriage: Boolean = false
+
+  """Fecha de certificación de triage"""
+  fechaCertificacion: DateTime
+
+  """ID del nivel de formación (FK a tabla formacion)"""
+  nivelFormacion: Int!
+
+  """Número de registro profesional único del enfermero"""
+  numeroRegistro: String!
+}
+
+"""Datos para crear un registro en el historial médico"""
+input CreateHistorialInput {
+  """ID de la cita médica asociada (opcional)"""
+  citaId: ID
+
+  """Diagnóstico"""
+  diagnostico: String
+
+  """ID del médico que crea el registro"""
+  medicoId: ID!
+
+  """Observaciones adicionales"""
+  observaciones: String
+
+  """ID del paciente"""
+  pacienteId: ID!
+
+  """Tratamiento indicado"""
+  tratamiento: String
+}
+
+"""Datos para registrar un medicamento en el inventario de una sede"""
+input CreateInventarioInput {
+  """ID del medicamento"""
+  medicamentoId: Int!
+
+  """Precio del medicamento en esta sede (ej. "15000.50")"""
+  precio: String
+
+  """ID de la sede"""
+  sedeId: Int!
+
+  """Stock actual (default: 0)"""
+  stockActual: Int! = 0
+
+  """Stock mínimo (default: 10)"""
+  stockMinimo: Int = 10
+}
+
+"""Datos para crear un medicamento en el catálogo"""
+input CreateMedicineInput {
+  """ID de la categoría de medicamento"""
+  categoriaId: Int
+
+  """Contraindicaciones del medicamento"""
+  contraindicaciones: String
+
+  """Descripción general del medicamento"""
+  descripcion: String
+
+  """Indicaciones terapéuticas"""
+  indicaciones: String
+
+  """Nombre comercial del medicamento (máx. 150 caracteres)"""
+  nombreComercial: String!
+
+  """Nombre genérico / principio activo"""
+  nombreGenerico: String
+
+  """Presentación (tabletas, jarabe, ampolla, etc.)"""
+  presentacion: String
+
+  """¿Requiere receta médica? (default: true)"""
+  requiereReceta: Boolean = true
+}
+
+"""Datos específicos del perfil de médico"""
+input CreateMedicoDataInput {
+  """Número o nombre del consultorio (opcional)"""
+  consultorio: String
+
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Número de registro médico único"""
+  numeroRegistro: String!
+}
+
+input CreateNotificacionInput {
+  mensaje: String!
+  referenciaId: ID
+  tipo: String! = "SISTEMA"
+  titulo: String!
+  usuarioId: ID!
+}
+
+"""Datos para crear el perfil de enfermero de un usuario existente"""
+input CreateNurseInput {
+  """ID del área de especialización (FK tabla especialidades)"""
+  areaEspecializacion: Int!
+
+  """¿Tiene certificación de triage?"""
+  certificacionTriage: Boolean = false
+
+  """Fecha de la certificación de triage"""
+  fechaCertificacion: DateTime
+
+  """ID del nivel de formación (FK tabla formacion)"""
+  nivelFormacion: Int!
+
+  """Número de registro profesional único (máx. 50 caracteres)"""
+  numeroRegistro: String!
+
+  """ID del usuario al que se asociará el enfermero"""
+  usuarioId: ID!
+}
+
+"""Datos específicos del perfil de paciente"""
+input CreatePacienteDataInput {
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes"""
+  antecedentes: String
+
+  """EPS o aseguradora del paciente"""
+  eps: String
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Número de documento de identidad"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String
+
+  """Tipo de sangre (ej. O+, A-, B+)"""
+  tipoSangre: String
+}
+
+"""Datos requeridos para registrar un nuevo paciente"""
+input CreatePatientInput {
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes del paciente"""
+  antecedentes: String
+
+  """EPS o aseguradora del paciente (máx. 100 caracteres)"""
+  eps: String
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Número de documento de identidad (máx. 20 caracteres)"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String
+
+  """Tipo de sangre del paciente (ej. O+, A-, B+)"""
+  tipoSangre: String
+
+  """ID del usuario al que se asociará el paciente"""
+  usuarioId: ID!
+}
+
+"""Datos para crear una receta médica"""
+input CreateRecetaInput {
+  """Dosis (ej. "500mg")"""
+  dosis: String
+
+  """Duración del tratamiento en días"""
+  duracionDias: Int
+
+  """Frecuencia (ej. "Cada 8 horas")"""
+  frecuencia: String
+
+  """ID del historial médico al que se asocia la receta"""
+  historialId: ID!
+
+  """ID del medicamento recetado"""
+  medicamentoId: Int!
+
+  """Observaciones o instrucciones especiales"""
+  observaciones: String
+}
+
+"""Datos para crear una sede"""
+input CreateSedeInput {
+  """Ciudad de la sede"""
+  ciudad: String
+
+  """Dirección física de la sede"""
+  direccion: String
+
+  """Nombre de la sede (máx. 150 caracteres)"""
+  nombre: String!
+}
+
+"""Datos para registrar un nuevo turno en la cola"""
+input CreateTurnInput {
+  """ID de la especialidad requerida (opcional)"""
+  especialidadId: Int
+
+  """ID del hospital donde se solicita el turno"""
+  hospitalId: Int!
+
+  """
+  ID del médico específico (opcional). Si no se provee, se asigna por especialidad.
+  """
+  medicoId: ID
+
+  """ID del paciente que solicita el turno"""
+  pacienteId: ID!
+
+  """Tipo de turno: NORMAL, PRIORITARIO o URGENTE. Por defecto: NORMAL."""
+  tipo: TipoTurno = NORMAL
+}
+
+"""Datos para registrar un nuevo usuario"""
+input CreateUserInput {
+  """Apellido del usuario"""
+  apellido: String!
+
+  """Correo electrónico único"""
+  email: String!
+
+  """Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO"""
+  enfermeroData: CreateEnfermeroDataInput
+
+  """ID del hospital al que se vincula el usuario. Recomendado."""
+  hospitalId: Int
+
+  """Datos del perfil médico. Requerido cuando rol es MEDICO"""
+  medicoData: CreateMedicoDataInput
+
+  """Nombre del usuario"""
+  nombre: String!
+
+  """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
+  pacienteData: CreatePacienteDataInput
+
+  """Contraseña del usuario"""
+  password: String!
+
+  """Rol del usuario. Por defecto: PACIENTE"""
+  rol: RolUsuario
+
+  """Teléfono de contacto (opcional)"""
+  telefono: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Bloque de disponibilidad horaria de un enfermero"""
+type DisponibilidadEnfermero {
+  """Indica si el bloque está activo"""
+  activo: Boolean!
+
+  """Día de la semana (0=Domingo, 1=Lunes, …, 6=Sábado)"""
+  diaSemana: Int!
+
+  """ID del enfermero"""
+  enfermeroId: ID!
+
+  """Hora de fin del bloque (HH:MM:SS)"""
+  horaFin: String!
+
+  """Hora de inicio del bloque (HH:MM:SS)"""
+  horaInicio: String!
+
+  """ID del bloque de disponibilidad"""
+  id: Int!
+}
+
+"""Estado de disponibilidad calculado automáticamente por trigger de BD"""
+enum DisponibilidadMedicamento {
+  """Stock actual = 0"""
+  AGOTADO
+
+  """Stock actual > stock mínimo"""
+  DISPONIBLE
+
+  """Stock actual ≤ stock mínimo (pero > 0)"""
+  STOCK_BAJO
+}
+
+"""Horario semanal disponible de un médico para recibir citas"""
+type DisponibilidadMedico {
+  """Si el bloque está activo y genera slots"""
+  activo: Boolean!
+
+  """0=Dom 1=Lun 2=Mar 3=Mié 4=Jue 5=Vie 6=Sáb"""
+  diaSemana: Int!
+
+  """Duración en minutos de cada cita en este bloque"""
+  duracionCita: Int!
+
+  """Hora de fin en formato HH:MM (ISO time)"""
+  horaFin: DateTime!
+
+  """Hora de inicio en formato HH:MM (ISO time)"""
+  horaInicio: DateTime!
+  id: Int!
+  medicoId: ID!
+}
+
+"""Representa un médico registrado en el sistema"""
+type Doctor {
+  """Indica si el médico está activo en el sistema"""
+  activo: Boolean!
+
+  """Apellido del médico"""
+  apellido: String!
+
+  """Número o nombre del consultorio asignado"""
+  consultorio: String
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
+
+  """Correo electrónico del médico"""
+  email: String!
+
+  """ID de la especialidad médica"""
+  especialidadId: Int!
+
+  """Identificador único del médico (UUID)"""
+  id: ID!
+
+  """Nombre del médico"""
+  nombre: String!
+
+  """Número de registro médico único"""
+  numeroRegistro: String!
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """ID del usuario asociado al médico"""
+  usuarioId: ID!
+}
+
+"""Estado actual de una cita médica"""
+enum EstadoCita {
+  CANCELADA
+  COMPLETADA
+  CONFIRMADA
+  PENDIENTE
+  POSPUESTA
+}
+
+"""Estado del turno en la cola de atención"""
+enum EstadoTurno {
+  """Turno completado"""
+  ATENDIDO
+
+  """Turno cancelado"""
+  CANCELADO
+
+  """Turno en atención activa"""
+  EN_CONSULTA
+
+  """Turno esperando ser llamado"""
+  EN_ESPERA
+}
+
+input ExtendAppoinmentInput {
+  id: ID!
+  minutosAdicionales: Int!
+}
+
+"""Registro de historial médico vinculado a un paciente y médico"""
+type HistorialMedico {
+  """ID de la cita médica asociada (opcional)"""
+  citaId: ID
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
+
+  """Diagnóstico registrado"""
+  diagnostico: String
+
+  """ID único del historial (UUID)"""
+  id: ID!
+
+  """ID del médico que generó el registro"""
+  medicoId: ID!
+
+  """Observaciones adicionales del médico"""
+  observaciones: String
+
+  """ID del paciente"""
+  pacienteId: ID!
+
+  """Tratamiento indicado"""
+  tratamiento: String
+}
+
+"""Registro de inventario de un medicamento en una sede"""
+type InventarioMedicamento {
+  """Fecha de última actualización (gestionada por trigger)"""
+  actualizadoEn: DateTime!
+
+  """
+  Calculado automáticamente por trigger de BD según stock_actual vs stock_minimo
+  """
+  disponibilidad: DisponibilidadMedicamento!
+
+  """ID del registro de inventario"""
+  id: Int!
+
+  """ID del medicamento"""
+  medicamentoId: Int!
+
+  """Precio del medicamento en esta sede"""
+  precio: String
+
+  """ID de la sede"""
+  sedeId: Int!
+
+  """Stock actual del medicamento en esta sede"""
+  stockActual: Int!
+
+  """
+  Stock mínimo configurado. Cuando stock_actual ≤ stock_minimo el trigger cambia disponibilidad a STOCK_BAJO
+  """
+  stockMinimo: Int!
+}
+
+"""Medicamento del catálogo"""
+type Medicine {
+  """Estado activo del medicamento"""
+  activo: Boolean!
+
+  """ID de la categoría"""
+  categoriaId: Int
+
+  """Contraindicaciones"""
+  contraindicaciones: String
+
+  """Fecha de creación"""
+  creadoEn: DateTime!
+
+  """Descripción general"""
+  descripcion: String
+
+  """ID del medicamento"""
+  id: Int!
+
+  """Indicaciones terapéuticas"""
+  indicaciones: String
+
+  """Nombre comercial del medicamento"""
+  nombreComercial: String!
+
+  """Nombre genérico (principio activo)"""
+  nombreGenerico: String
+
+  """Presentación (tabletas, jarabe, etc.)"""
+  presentacion: String
+
+  """¿Requiere receta médica?"""
+  requiereReceta: Boolean!
+}
+
+type Mutation {
+  """Marcar un turno como completado/atendido"""
+  atenderTurno(id: ID!): Turno!
+  cancelAppoinment(input: CancelAppoinmentInput!): Appoinment!
+
+  """Cancelar un turno activo"""
+  cancelarTurno(id: ID!): Turno!
+  completeAppoinment(id: ID!): Appoinment!
+  confirmSlotOffer(input: ConfirmSlotInput!): Appoinment!
+
+  """Registrar un nuevo turno en la cola del hospital"""
+  crearTurno(input: CreateTurnInput!): Turno!
+  createAppoinment(input: CreateAppoinmentInput!): Appoinment!
+
+  """Crea una nueva categoría de medicamento (ADMIN)"""
+  createCategoriaMedicamento(input: CreateCategoriaInput!): CategoriaMedicamento!
+
+  """
+  Registra un consentimiento informado de un paciente (ADMIN/MEDICO/RECEPCIONISTA)
+  """
+  createConsentimiento(input: CreateConsentimientoInput!): ConsentimientoPaciente!
+
+  """Crea un bloque de disponibilidad horaria para un médico"""
+  createDisponibilidad(input: CreateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Crea un bloque de disponibilidad horaria para un enfermero"""
+  createDisponibilidadEnfermero(input: CreateDisponibilidadEnfermeroInput!): DisponibilidadEnfermero!
+
+  """
+  Vincula un perfil de médico a un usuario existente (requiere usuarioId)
+  """
+  createDoctor(input: CreateDoctorInput!): Doctor!
+
+  """Crea un registro en el historial médico de un paciente (MEDICO/ADMIN)"""
+  createHistorial(input: CreateHistorialInput!): HistorialMedico!
+
+  """
+  Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA/ENFERMERO)
+  """
+  createInventario(input: CreateInventarioInput!): InventarioMedicamento!
+
+  """Crea un medicamento en el catálogo (ADMIN)"""
+  createMedicine(input: CreateMedicineInput!): Medicine!
+  createNotificacion(input: CreateNotificacionInput!): Notificacion!
+
+  """Vincula un perfil de enfermero a un usuario existente (ADMIN)"""
+  createNurse(input: CreateNurseInput!): Nurse!
+
+  """Vincula un perfil de paciente a un usuario existente"""
+  createPatient(input: CreatePatientInput!): Patient!
+
+  """Crea una receta médica vinculada a un historial (MEDICO/ADMIN)"""
+  createReceta(input: CreateRecetaInput!): Receta!
+
+  """Crea una nueva sede (ADMIN)"""
+  createSede(input: CreateSedeInput!): Sede!
+
+  """Registra un nuevo usuario. Rol por defecto: PACIENTE"""
+  createUser(input: CreateUserInput!): User!
+
+  """Desactiva todos los bloques de disponibilidad de un médico"""
+  deactivateAllDisponibilidades(medicoId: ID!): Int!
+
+  """Desactiva todos los bloques de disponibilidad de un enfermero"""
+  deactivateAllDisponibilidadesEnfermero(enfermeroId: ID!): Int!
+  eliminarNotificacion(id: ID!): Notificacion!
+  extendCurrentAppoinment(input: ExtendAppoinmentInput!): Appoinment!
+
+  """Retorna el número de notificaciones eliminadas"""
+  limpiarNotificacionesLeidas: Int!
+
+  """Llamar al siguiente turno en espera según prioridad"""
+  llamarSiguienteTurno(hospitalId: Int, medicoId: ID): Turno!
+  marcarNotificacionLeida(id: ID!): Notificacion!
+
+  """Retorna el número de notificaciones marcadas como leídas"""
+  marcarTodasLeidas: Int!
+  postponeAppoinment(id: ID!, motivo: String, nuevaFechaHora: DateTime!): Appoinment!
+
+  """
+  Elimina físicamente una categoría de medicamento (ADMIN). Falla si tiene medicamentos asociados.
+  """
+  removeCategoriaMedicamento(id: Int!): CategoriaMedicamento!
+
+  """Elimina un bloque de disponibilidad del médico"""
+  removeDisponibilidad(id: Int!): DisponibilidadMedico!
+
+  """Elimina permanentemente un bloque de disponibilidad de enfermero"""
+  removeDisponibilidadEnfermero(id: Int!): DisponibilidadEnfermero!
+
+  """Desactiva un médico del sistema (soft delete)"""
+  removeDoctor(
+    """ID del médico a desactivar"""
+    id: ID!
+  ): Doctor!
+
+  """Elimina un registro de inventario (ADMIN)"""
+  removeInventario(id: Int!): InventarioMedicamento!
+
+  """Da de baja lógicamente un medicamento (activo=false). (ADMIN)"""
+  removeMedicine(id: Int!): Medicine!
+
+  """Da de baja lógicamente a un enfermero (activo=false) (ADMIN)"""
+  removeNurse(id: ID!): Nurse!
+
+  """Elimina un paciente del sistema"""
+  removePatient(
+    """ID del paciente a eliminar"""
+    id: ID!
+  ): Patient!
+
+  """Elimina físicamente una receta (solo ADMIN, en casos excepcionales)"""
+  removeReceta(id: Int!): Receta!
+
+  """
+  Elimina físicamente una sede (ADMIN). Falla si tiene inventario asociado.
+  """
+  removeSede(id: Int!): Sede!
+
+  """Desactiva un usuario del sistema (soft delete). Requiere rol ADMIN."""
+  removeUser(
+    """ID del usuario a desactivar"""
+    id: ID!
+  ): User!
+  rescheduleAppoinment(input: RescheduleAppoinmentInput!): Appoinment!
+
+  """Revoca un consentimiento de paciente (registra fecha de revocación)"""
+  revocarConsentimiento(id: Int!): ConsentimientoPaciente!
+  updateAppoinment(input: UpdateAppoinmentInput!): Appoinment!
+
+  """Actualiza el nombre de una categoría de medicamento (ADMIN)"""
+  updateCategoriaMedicamento(input: UpdateCategoriaInput!): CategoriaMedicamento!
+
+  """
+  Actualiza el documento firmado de un consentimiento (ADMIN/RECEPCIONISTA)
+  """
+  updateConsentimiento(input: UpdateConsentimientoInput!): ConsentimientoPaciente!
+
+  """Actualiza horarios o estado activo de un bloque de disponibilidad"""
+  updateDisponibilidad(input: UpdateDisponibilidadInput!): DisponibilidadMedico!
+
+  """Actualiza un bloque de disponibilidad de enfermero"""
+  updateDisponibilidadEnfermero(input: UpdateDisponibilidadEnfermeroInput!): DisponibilidadEnfermero!
+
+  """Actualiza los datos de un médico existente"""
+  updateDoctor(input: UpdateDoctorInput!): Doctor!
+
+  """
+  Actualiza diagnóstico, tratamiento u observaciones de un historial. Solo el médico autor o ADMIN.
+  """
+  updateHistorial(input: UpdateHistorialInput!): HistorialMedico!
+
+  """
+  Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente. (ADMIN/RECEPCIONISTA/ENFERMERO)
+  """
+  updateInventario(input: UpdateInventarioInput!): InventarioMedicamento!
+
+  """Actualiza un medicamento del catálogo (ADMIN)"""
+  updateMedicine(input: UpdateMedicineInput!): Medicine!
+
+  """
+  Actualiza nombre, apellido o teléfono del usuario autenticado. No requiere rol especial.
+  """
+  updateMyProfile(input: UpdateMyProfileInput!): User!
+
+  """Actualiza los datos de un enfermero (ADMIN)"""
+  updateNurse(input: UpdateNurseInput!): Nurse!
+
+  """Actualiza los datos de un paciente existente"""
+  updatePatient(input: UpdatePatientInput!): Patient!
+
+  """Actualiza los datos de una receta médica (MEDICO/ADMIN)"""
+  updateReceta(input: UpdateRecetaInput!): Receta!
+
+  """Actualiza los datos de una sede (ADMIN)"""
+  updateSede(input: UpdateSedeInput!): Sede!
+
+  """
+  Actualiza nombre, apellido, teléfono o rol de un usuario. Requiere rol ADMIN.
+  """
+  updateUser(input: UpdateUserInput!): User!
+}
+
+"""Notificación persistente para un usuario del sistema"""
+type Notificacion {
+  creadoEn: DateTime!
+  id: ID!
+
+  """Si el usuario ya la leyó"""
+  leida: Boolean!
+  mensaje: String!
+
+  """ID de la entidad referenciada (cita, turno, etc.)"""
+  referenciaId: ID
+
+  """Categoría de la notificación"""
+  tipo: String!
+  titulo: String!
+
+  """ID del usuario destinatario"""
+  usuarioId: ID!
+}
+
+"""Perfil de enfermero registrado en el sistema"""
+type Nurse {
+  """Estado activo del enfermero"""
+  activo: Boolean!
+
+  """Apellido del enfermero"""
+  apellido: String!
+
+  """ID del área de especialización (FK especialidades)"""
+  areaEspecializacion: Int!
+
+  """¿Tiene certificación de triage?"""
+  certificacionTriage: Boolean!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
+
+  """Correo electrónico"""
+  email: String!
+
+  """Fecha de certificación de triage"""
+  fechaCertificacion: DateTime
+
+  """ID único del enfermero (UUID)"""
+  id: ID!
+
+  """ID del nivel de formación (FK formacion)"""
+  nivelFormacion: Int!
+
+  """Nombre del enfermero"""
+  nombre: String!
+
+  """Número de registro profesional único"""
+  numeroRegistro: String!
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """ID del usuario asociado"""
+  usuarioId: ID!
+}
+
+"""Representa un paciente registrado en el sistema"""
+type Patient {
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos del paciente"""
+  antecedentes: String
+
+  """Apellido del paciente"""
+  apellido: String!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
+
+  """Correo electrónico del paciente"""
+  email: String!
+
+  """EPS o aseguradora del paciente"""
+  eps: String
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Identificador único del paciente (UUID)"""
+  id: ID!
+
+  """Nombre del paciente"""
+  nombre: String!
+
+  """Número de documento de identidad"""
+  numeroDocumento: String
+
+  """Teléfono de contacto"""
+  telefono: String
+
+  """Tipo de documento (CC, TI, CE, etc.)"""
+  tipoDocumento: String
+
+  """Tipo de sangre del paciente (ej. O+, A-)"""
+  tipoSangre: String
+
+  """ID del usuario asociado al paciente"""
+  usuarioId: ID!
+}
+
+type Query {
+  appoinment(id: ID!): Appoinment!
+  appoinments: [Appoinment!]!
+  appoinmentsByDoctor(fecha: DateTime, medicoId: ID!): [Appoinment!]!
+  appoinmentsByPatient(pacienteId: ID!): [Appoinment!]!
+  availableSlots(fecha: DateTime!, medicoId: ID!): [SlotDisponible!]!
+
+  """Busca una categoría de medicamento por ID"""
+  categoriaMedicamento(id: Int!): CategoriaMedicamento!
+
+  """Lista todas las categorías de medicamentos"""
+  categoriasMedicamento: [CategoriaMedicamento!]!
+
+  """Busca un consentimiento por ID"""
+  consentimiento(id: Int!): ConsentimientoPaciente!
+
+  """Lista todos los consentimientos de un paciente"""
+  consentimientosByPaciente(pacienteId: ID!): [ConsentimientoPaciente!]!
+  conteoSinLeer: Int!
+
+  """Busca un bloque de disponibilidad por su ID"""
+  disponibilidad(id: Int!): DisponibilidadMedico!
+
+  """Busca un bloque de disponibilidad de enfermero por ID"""
+  disponibilidadEnfermero(id: Int!): DisponibilidadEnfermero!
+
+  """
+  Retorna todos los bloques de disponibilidad de un médico, ordenados por día y hora
+  """
+  disponibilidadesByDoctor(medicoId: ID!): [DisponibilidadMedico!]!
+
+  """Lista los bloques de disponibilidad de un enfermero"""
+  disponibilidadesByNurse(enfermeroId: ID!): [DisponibilidadEnfermero!]!
+
+  """Busca un médico por su ID"""
+  doctor(
+    """ID del médico"""
+    id: ID!
+  ): Doctor!
+
+  """Retorna médicos activos; opcionalmente filtrados por hospital"""
+  doctors(
+    """ID del hospital para filtrar médicos vinculados"""
+    hospitalId: Int
+  ): [Doctor!]!
+
+  """Busca un registro de historial médico por ID"""
+  historial(id: ID!): HistorialMedico!
+
+  """Registros de historial generados por un médico (MEDICO/ADMIN)"""
+  historialByMedico(medicoId: ID!): [HistorialMedico!]!
+
+  """
+  Historial médico completo de un paciente (ordenado del más reciente al más antiguo)
+  """
+  historialByPaciente(pacienteId: ID!): [HistorialMedico!]!
+
+  """Lista todo el inventario de medicamentos"""
+  inventario: [InventarioMedicamento!]!
+
+  """Inventario de un medicamento en todas las sedes"""
+  inventarioByMedicamento(medicamentoId: Int!): [InventarioMedicamento!]!
+
+  """Inventario de medicamentos de una sede específica"""
+  inventarioBySede(sedeId: Int!): [InventarioMedicamento!]!
+
+  """Busca un registro de inventario por ID"""
+  inventarioItem(id: Int!): InventarioMedicamento!
+
+  """Busca un medicamento por ID"""
+  medicine(id: Int!): Medicine!
+
+  """Lista medicamentos del catálogo. Por defecto solo activos."""
+  medicines(
+    """Texto para filtrar por nombre comercial o genérico (case-insensitive)"""
+    busqueda: String
+    soloActivos: Boolean = true
+  ): [Medicine!]!
+
+  """Perfil de paciente del usuario autenticado, o null si no tiene perfil"""
+  myPatientProfile: Patient
+  notificaciones: [Notificacion!]!
+  notificacionesSinLeer: [Notificacion!]!
+
+  """Busca un enfermero por su ID"""
+  nurse(
+    """ID del enfermero"""
+    id: ID!
+  ): Nurse!
+
+  """Lista todos los enfermeros activos"""
+  nurses: [Nurse!]!
+
+  """Busca un paciente por su ID"""
+  patient(
+    """ID del paciente"""
+    id: ID!
+  ): Patient!
+
+  """Retorna todos los pacientes registrados"""
+  patients: [Patient!]!
+
+  """Retorna los pacientes vinculados a un hospital específico"""
+  patientsByHospital(
+    """ID del hospital"""
+    hospitalId: Int!
+  ): [Patient!]!
+
+  """Busca una receta por ID"""
+  receta(id: Int!): Receta!
+
+  """Lista las recetas médicas de un historial clínico"""
+  recetasByHistorial(historialId: ID!): [Receta!]!
+
+  """Busca una sede por ID"""
+  sede(id: Int!): Sede!
+
+  """Lista todas las sedes"""
+  sedes: [Sede!]!
+  turno(id: ID!): Turno!
+  turnosEnEspera(hospitalId: Int, medicoId: ID): Int!
+  turnosPorHospital(estado: EstadoTurno, fecha: DateTime, hospitalId: Int): [Turno!]!
+  turnosPorPaciente(fecha: DateTime, pacienteId: ID!): [Turno!]!
+
+  """Busca un usuario por su ID"""
+  user(
+    """ID del usuario"""
+    id: ID!
+  ): User!
+
+  """Retorna todos los usuarios activos. Requiere rol ADMIN."""
+  users: [User!]!
+}
+
+"""Receta médica vinculada a un historial clínico"""
+type Receta {
+  """Dosis indicada (ej. "500mg")"""
+  dosis: String
+
+  """Duración del tratamiento en días"""
+  duracionDias: Int
+
+  """Frecuencia de administración (ej. "Cada 8 horas")"""
+  frecuencia: String
+
+  """ID del historial médico al que pertenece"""
+  historialId: ID!
+
+  """ID de la receta"""
+  id: Int!
+
+  """ID del medicamento recetado"""
+  medicamentoId: Int!
+
+  """Observaciones o instrucciones especiales"""
+  observaciones: String
+}
+
+input RescheduleAppoinmentInput {
+  citaId: ID!
+  nuevaFechaHora: DateTime!
+}
+
+"""Roles disponibles para un usuario del sistema"""
+enum RolUsuario {
+  """Administrador del sistema"""
+  ADMIN
+
+  """Enfermero registrado"""
+  ENFERMERO
+
+  """Médico registrado"""
+  MEDICO
+
+  """Paciente (rol por defecto)"""
+  PACIENTE
+
+  """Recepcionista del hospital"""
+  RECEPCIONISTA
+}
+
+"""Sede / sucursal del hospital"""
+type Sede {
+  """Ciudad donde se ubica la sede"""
+  ciudad: String
+
+  """Dirección física"""
+  direccion: String
+
+  """ID de la sede"""
+  id: Int!
+
+  """Nombre de la sede"""
+  nombre: String!
+}
+
+type SlotDisponible {
+  duracionMinutos: Int!
+  fechaHora: DateTime!
+}
+
+type Subscription {
+  citaActualizada(medicoId: ID!): CitaEvento!
+  citaPacienteActualizada(pacienteId: ID!): CitaEvento!
+
+  """
+  Canal personal del paciente. Recibe actualizaciones de su turno en tiempo real.
+  """
+  miTurnoActualizado(pacienteId: ID!): TurnoEvento!
+  nuevaNotificacion(usuarioId: ID!): Notificacion!
+
+  """
+  Recibe actualizaciones en tiempo real de todos los turnos del hospital indicado. Usar en pantallas de sala de espera y recepción.
+  """
+  turnoActualizado(hospitalId: Int!): TurnoEvento!
+}
+
+"""Prioridad del turno"""
+enum TipoTurno {
+  """Turno normal sin prioridad especial"""
+  NORMAL
+
+  """Turno con prioridad (adulto mayor, embarazada, etc.)"""
+  PRIORITARIO
+
+  """Turno urgente / emergencia"""
+  URGENTE
+}
+
+"""Turno en la cola de atención de un hospital"""
+type Turno {
+  """Fecha y hora en que fue atendido/completado"""
+  atendidoEn: DateTime
+
+  """Fecha y hora de creación del registro"""
+  creadoEn: DateTime!
+
+  """ID de la especialidad requerida"""
+  especialidadId: Int
+
+  """Estado actual del turno"""
+  estado: EstadoTurno!
+
+  """Fecha del turno (solo fecha, sin hora)"""
+  fecha: DateTime!
+
+  """ID del hospital donde se atiende el turno"""
+  hospitalId: Int
+
+  """Identificador único del turno (UUID)"""
+  id: ID!
+
+  """Fecha y hora en que fue llamado"""
+  llamadoEn: DateTime
+
+  """ID del médico asignado (opcional)"""
+  medicoId: ID
+
+  """Número de turno asignado en el día"""
+  numeroTurno: Int!
+
+  """ID del paciente"""
+  pacienteId: ID!
+
+  """Posición en la cola de espera"""
+  posicionCola: Int
+
+  """Tipo/prioridad del turno"""
+  tipo: TipoTurno!
+}
+
+"""Evento emitido por subscripción de turnos"""
+type TurnoEvento {
+  """Mensaje adicional para mostrar al paciente"""
+  mensaje: String
+
+  """Tipo de evento: CREADO | LLAMADO | EN_CONSULTA | ATENDIDO | CANCELADO"""
+  tipo: String!
+
+  """Turno afectado"""
+  turno: Turno!
+}
+
+input UpdateAppoinmentInput {
+  id: ID!
+  motivo: String
+  notasMedico: String
+}
+
+"""Datos para actualizar una categoría de medicamento"""
+input UpdateCategoriaInput {
+  """ID de la categoría a actualizar"""
+  id: Int!
+
+  """Nombre único de la categoría (máx. 100 caracteres)"""
+  nombre: String
+}
+
+"""Datos para actualizar el documento firmado de un consentimiento"""
+input UpdateConsentimientoInput {
+  """Nueva ruta o URL del documento firmado"""
+  documentoFirmado: String
+
+  """ID del consentimiento"""
+  id: Int!
+}
+
+"""Datos para actualizar un bloque de disponibilidad de enfermero"""
+input UpdateDisponibilidadEnfermeroInput {
+  """Día de semana (0=Domingo, 6=Sábado)"""
+  diaSemana: Int
+
+  """ID del enfermero"""
+  enfermeroId: ID
+
+  """Hora de fin en formato HH:MM (ej. "12:00")"""
+  horaFin: String
+
+  """Hora de inicio en formato HH:MM (ej. "08:00")"""
+  horaInicio: String
+
+  """ID del bloque de disponibilidad"""
+  id: Int!
+}
+
+input UpdateDisponibilidadInput {
+  activo: Boolean
+  duracionCita: Int
+  horaFin: DateTime
+  horaInicio: DateTime
+
+  """ID del registro de disponibilidad"""
+  id: Int!
+}
+
+"""
+Datos para actualizar un médico existente. Todos los campos son opcionales excepto el ID
+"""
+input UpdateDoctorInput {
+  """Número o nombre del consultorio (opcional, máx. 20 caracteres)"""
+  consultorio: String
+
+  """ID de la especialidad médica"""
+  especialidadId: Int
+
+  """Identificador único del médico a actualizar"""
+  id: ID!
+
+  """Número de registro médico único (máx. 50 caracteres)"""
+  numeroRegistro: String
+
+  """ID del usuario al que se asociará el médico"""
+  usuarioId: ID
+}
+
+"""Datos para actualizar un registro del historial médico"""
+input UpdateHistorialInput {
+  """Diagnóstico actualizado"""
+  diagnostico: String
+
+  """ID del historial a actualizar"""
+  id: ID!
+
+  """Observaciones actualizadas"""
+  observaciones: String
+
+  """Tratamiento actualizado"""
+  tratamiento: String
+}
+
+"""Datos para actualizar el inventario de un medicamento en una sede"""
+input UpdateInventarioInput {
+  """ID del registro de inventario"""
+  id: Int!
+
+  """Nuevo precio"""
+  precio: String
+
+  """Nuevo stock actual"""
+  stockActual: Int
+
+  """Nuevo stock mínimo"""
+  stockMinimo: Int
+}
+
+"""Datos para actualizar un medicamento"""
+input UpdateMedicineInput {
+  """ID de la categoría de medicamento"""
+  categoriaId: Int
+
+  """Contraindicaciones del medicamento"""
+  contraindicaciones: String
+
+  """Descripción general del medicamento"""
+  descripcion: String
+
+  """ID del medicamento a actualizar"""
+  id: Int!
+
+  """Indicaciones terapéuticas"""
+  indicaciones: String
+
+  """Nombre comercial del medicamento (máx. 150 caracteres)"""
+  nombreComercial: String
+
+  """Nombre genérico / principio activo"""
+  nombreGenerico: String
+
+  """Presentación (tabletas, jarabe, ampolla, etc.)"""
+  presentacion: String
+
+  """¿Requiere receta médica? (default: true)"""
+  requiereReceta: Boolean = true
+}
+
+"""Datos para actualizar el perfil propio (nombre, apellido, teléfono)"""
+input UpdateMyProfileInput {
+  """Apellido del usuario"""
+  apellido: String
+
+  """Nombre del usuario"""
+  nombre: String
+
+  """Teléfono de contacto"""
+  telefono: String
+}
+
+"""Datos para actualizar el perfil de un enfermero"""
+input UpdateNurseInput {
+  """ID del área de especialización (FK tabla especialidades)"""
+  areaEspecializacion: Int
+
+  """¿Tiene certificación de triage?"""
+  certificacionTriage: Boolean = false
+
+  """Fecha de la certificación de triage"""
+  fechaCertificacion: DateTime
+
+  """ID del enfermero a actualizar"""
+  id: ID!
+
+  """ID del nivel de formación (FK tabla formacion)"""
+  nivelFormacion: Int
+
+  """Número de registro profesional único (máx. 50 caracteres)"""
+  numeroRegistro: String
+
+  """ID del usuario al que se asociará el enfermero"""
+  usuarioId: ID
+}
+
+"""
+Datos para actualizar un paciente existente. Todos los campos son opcionales excepto el ID
+"""
+input UpdatePatientInput {
+  """Alergias conocidas del paciente"""
+  alergias: String
+
+  """Antecedentes médicos relevantes del paciente"""
+  antecedentes: String
+
+  """EPS o aseguradora del paciente (máx. 100 caracteres)"""
+  eps: String
+
+  """Fecha de nacimiento del paciente"""
+  fechaNacimiento: DateTime
+
+  """Identificador único del paciente a actualizar"""
+  id: ID!
+
+  """Número de documento de identidad (máx. 20 caracteres)"""
+  numeroDocumento: String
+
+  """Tipo de documento (CC, TI, CE, etc.). Por defecto: CC"""
+  tipoDocumento: String
+
+  """Tipo de sangre del paciente (ej. O+, A-, B+)"""
+  tipoSangre: String
+
+  """ID del usuario al que se asociará el paciente"""
+  usuarioId: ID
+}
+
+"""Datos para actualizar una receta médica"""
+input UpdateRecetaInput {
+  """Dosis (ej. "500mg")"""
+  dosis: String
+
+  """Duración del tratamiento en días"""
+  duracionDias: Int
+
+  """Frecuencia (ej. "Cada 8 horas")"""
+  frecuencia: String
+
+  """ID del historial médico al que se asocia la receta"""
+  historialId: ID
+
+  """ID de la receta a actualizar"""
+  id: Int!
+
+  """ID del medicamento recetado"""
+  medicamentoId: Int
+
+  """Observaciones o instrucciones especiales"""
+  observaciones: String
+}
+
+"""Datos para actualizar una sede"""
+input UpdateSedeInput {
+  """Ciudad de la sede"""
+  ciudad: String
+
+  """Dirección física de la sede"""
+  direccion: String
+
+  """ID de la sede a actualizar"""
+  id: Int!
+
+  """Nombre de la sede (máx. 150 caracteres)"""
+  nombre: String
+}
+
+"""
+Datos para actualizar un usuario existente (email y password no son modificables aquí)
+"""
+input UpdateUserInput {
+  """Apellido del usuario"""
+  apellido: String
+
+  """Datos del perfil de enfermero. Requerido cuando rol es ENFERMERO"""
+  enfermeroData: CreateEnfermeroDataInput
+
+  """ID del hospital al que se vincula el usuario. Recomendado."""
+  hospitalId: Int
+
+  """ID del usuario a actualizar"""
+  id: ID!
+
+  """Datos del perfil médico. Requerido cuando rol es MEDICO"""
+  medicoData: CreateMedicoDataInput
+
+  """Nombre del usuario"""
+  nombre: String
+
+  """Datos del perfil de paciente. Opcional cuando rol es PACIENTE"""
+  pacienteData: CreatePacienteDataInput
+
+  """Rol del usuario. Por defecto: PACIENTE"""
+  rol: RolUsuario
+
+  """Teléfono de contacto (opcional)"""
+  telefono: String
+}
+
+"""Usuario del sistema"""
+type User {
+  """Indica si el usuario está activo"""
+  activo: Boolean!
+
+  """Apellido del usuario"""
+  apellido: String!
+
+  """Fecha de creación del registro"""
+  creadoEn: DateTime!
+
+  """Correo electrónico único"""
+  email: String!
+
+  """Identificador único del usuario (UUID)"""
+  id: ID!
+
+  """Nombre del usuario"""
+  nombre: String!
+
+  """Rol del usuario en el sistema"""
+  rol: RolUsuario!
+
+  """Teléfono de contacto"""
+  telefono: String
+}

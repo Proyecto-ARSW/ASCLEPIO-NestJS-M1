@@ -4,7 +4,6 @@ import { Doctor } from './entities/doctor.entity';
 import { CreateDoctorInput } from './dto/create-doctor.input';
 import { UpdateDoctorInput } from './dto/update-doctor.input';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
@@ -65,10 +64,15 @@ export class DoctorsResolver {
     return this.doctorsService.findOne(id);
   }
 
-  private resolveHospitalId(user: JwtPayload, hospitalIdArg?: number): number | undefined {
+  private resolveHospitalId(
+    user: JwtPayload,
+    hospitalIdArg?: number,
+  ): number | undefined {
     if (hospitalIdArg !== undefined) {
       if (user.rol !== RolUsuario.ADMIN && user.hospitalId !== hospitalIdArg) {
-        throw new ForbiddenException('No tienes permisos para consultar médicos de otro hospital');
+        throw new ForbiddenException(
+          'No tienes permisos para consultar médicos de otro hospital',
+        );
       }
       return hospitalIdArg;
     }
@@ -81,7 +85,9 @@ export class DoctorsResolver {
       return undefined;
     }
 
-    throw new BadRequestException('El usuario autenticado no tiene hospital asignado');
+    throw new BadRequestException(
+      'El usuario autenticado no tiene hospital asignado',
+    );
   }
 }
 

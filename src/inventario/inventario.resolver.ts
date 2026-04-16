@@ -18,10 +18,12 @@ import { RolUsuario } from '../users/enums/rol-usuario.enum';
 export class InventarioResolver {
   constructor(private readonly inventarioService: InventarioService) {}
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  // ENFERMERO puede registrar inventario en su sede — necesario para que
+  // el personal de enfermería gestione la disponibilidad de medicamentos.
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA, RolUsuario.ENFERMERO)
   @Mutation(() => InventarioMedicamento, {
     description:
-      'Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA)',
+      'Registra un medicamento en el inventario de una sede (ADMIN/RECEPCIONISTA/ENFERMERO)',
   })
   createInventario(
     @Args('input') input: CreateInventarioInput,
@@ -71,10 +73,10 @@ export class InventarioResolver {
     return this.inventarioService.findOne(id);
   }
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA, RolUsuario.ENFERMERO)
   @Mutation(() => InventarioMedicamento, {
     description:
-      'Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente.',
+      'Actualiza stock o precio de un medicamento en una sede. El trigger recalcula disponibilidad automáticamente. (ADMIN/RECEPCIONISTA/ENFERMERO)',
   })
   updateInventario(
     @Args('input') input: UpdateInventarioInput,

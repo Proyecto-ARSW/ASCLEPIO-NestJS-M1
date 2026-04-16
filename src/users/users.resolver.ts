@@ -3,7 +3,10 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UpdateMyProfileInput } from './dto/update-my-profile.input';
 import { Auth } from 'src/auth/decorators/auth.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RolUsuario } from './enums/rol-usuario.enum';
 
 @Resolver(() => User)
@@ -48,6 +51,24 @@ export class UsersResolver {
   })
   updateUser(@Args('input') input: UpdateUserInput): Promise<User> {
     return this.usersService.update(input.id, input);
+  }
+
+  /** Cualquier usuario autenticado puede actualizar su propio perfil (nombre, apellido, teléfono) */
+  @Auth()
+  @Mutation(() => User, {
+    description:
+      'Actualiza nombre, apellido o teléfono del usuario autenticado. No requiere rol especial.',
+  })
+  updateMyProfile(
+    @CurrentUser() caller: JwtPayload,
+    @Args('input') input: UpdateMyProfileInput,
+  ): Promise<User> {
+    // Reutilizamos el service.update pasando el ID del JWT — el usuario
+    // solo puede modificar SU propio registro, nunca el de otro.
+    return this.usersService.update(caller.sub, {
+      id: caller.sub,
+      ...input,
+    });
   }
 
   /** Solo ADMIN puede desactivar usuarios */

@@ -91,6 +91,30 @@ export class PatientsService {
     return patient ? this.mapToEntity(patient) : null;
   }
 
+  /**
+   * Devuelve los pacientes vinculados a un hospital a través de hospital_usuario.
+   * Solo incluye usuarios con rol PACIENTE en ese hospital.
+   */
+  async findByHospital(hospitalId: number): Promise<Patient[]> {
+    // Obtenemos los usuario_id vinculados al hospital
+    const hospitalUsers = await this.prisma.hospital_usuario.findMany({
+      where: { hospital_id: hospitalId },
+      select: { usuario_id: true },
+    });
+    const userIds = hospitalUsers.map((hu) => hu.usuario_id);
+
+    if (userIds.length === 0) return [];
+
+    // Filtramos pacientes cuyo usuario_id esté entre los vinculados al hospital
+    const patients = await this.prisma.pacientes.findMany({
+      where: { usuario_id: { in: userIds } },
+      orderBy: { creado_en: 'desc' },
+      include: includeUsuario,
+    });
+
+    return patients.map((p) => this.mapToEntity(p));
+  }
+
   async update(id: string, input: UpdatePatientInput): Promise<Patient> {
     await this.findOne(id);
 

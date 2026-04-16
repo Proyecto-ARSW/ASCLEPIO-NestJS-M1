@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { PatientsService } from './patients.service';
 import { Patient } from './entities/patient.entity';
 import { CreatePatientInput } from './dto/create-patient.input';
@@ -69,6 +69,27 @@ export class PatientsResolver {
   })
   findAll(): Promise<Patient[]> {
     return this.patientsService.findAll();
+  }
+
+  /**
+   * Lista pacientes vinculados a un hospital específico.
+   * Usa la tabla hospital_usuario para filtrar por hospitalId.
+   */
+  @Auth(
+    RolUsuario.ADMIN,
+    RolUsuario.MEDICO,
+    RolUsuario.ENFERMERO,
+    RolUsuario.RECEPCIONISTA,
+  )
+  @Query(() => [Patient], {
+    name: 'patientsByHospital',
+    description: 'Retorna los pacientes vinculados a un hospital específico',
+  })
+  findByHospital(
+    @Args('hospitalId', { type: () => Int, description: 'ID del hospital' })
+    hospitalId: number,
+  ): Promise<Patient[]> {
+    return this.patientsService.findByHospital(hospitalId);
   }
 
   /**

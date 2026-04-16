@@ -37,8 +37,15 @@ export class MedicinesResolver {
       defaultValue: true,
     })
     soloActivos: boolean,
+    @Args('busqueda', {
+      type: () => String,
+      nullable: true,
+      description:
+        'Texto para filtrar por nombre comercial o genérico (case-insensitive)',
+    })
+    busqueda?: string,
   ): Promise<Medicine[]> {
-    return this.medicinesService.findAll(soloActivos);
+    return this.medicinesService.findAll(soloActivos, busqueda);
   }
 
   @Auth()
