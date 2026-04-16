@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes, scryptSync } from 'crypto';
 import { PrismaService } from '../shared/prisma/prisma.service';
+import { EncryptionService } from '../shared/encryption/encryption.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './entities/user.entity';
@@ -13,7 +14,12 @@ import { RolUsuario } from './enums/rol-usuario.enum';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // EncryptionService es global (@Global en EncryptionModule) — no necesita
+    // ser declarado en UsersModule; NestJS lo resuelve automáticamente.
+    private readonly enc: EncryptionService,
+  ) {}
 
   async create(input: CreateUserInput): Promise<User> {
     const rol = input.rol ?? RolUsuario.PACIENTE;
@@ -122,7 +128,8 @@ export class UsersService {
             numero_registro: input.enfermeroData!.numeroRegistro,
             nivel_formacion: input.enfermeroData!.nivelFormacion,
             area_especializacion: input.enfermeroData!.areaEspecializacion!,
-            certificacion_triage: input.enfermeroData!.certificacionTriage ?? false,
+            certificacion_triage:
+              input.enfermeroData!.certificacionTriage ?? false,
             fecha_certificacion: input.enfermeroData!.fechaCertificacion,
           },
         });
@@ -160,11 +167,18 @@ export class UsersService {
           data: {
             usuario_id: nuevoUsuario.id,
             fecha_nacimiento: input.pacienteData?.fechaNacimiento,
-            tipo_sangre: input.pacienteData?.tipoSangre,
-            numero_documento: input.pacienteData?.numeroDocumento,
+            // Cifrar campos PHI antes de escribir — la BD nunca ve el dato en plaintext
+            tipo_sangre: this.enc.encryptOrNull(input.pacienteData?.tipoSangre),
+            numero_documento: this.enc.encryptOrNull(
+              input.pacienteData?.numeroDocumento,
+            ),
+            // HMAC determinístico para poder buscar por documento sin descifrarlo
+            numero_documento_hmac: this.enc.hmacOrNull(
+              input.pacienteData?.numeroDocumento,
+            ),
             tipo_documento: input.pacienteData?.tipoDocumento ?? 'CC',
             eps: input.pacienteData?.eps,
-            alergias: input.pacienteData?.alergias,
+            alergias: this.enc.encryptOrNull(input.pacienteData?.alergias),
           },
         });
 

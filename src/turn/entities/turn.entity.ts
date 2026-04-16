@@ -29,7 +29,9 @@ registerEnumType(TipoTurno, {
   description: 'Prioridad del turno',
   valuesMap: {
     NORMAL: { description: 'Turno normal sin prioridad especial' },
-    PRIORITARIO: { description: 'Turno con prioridad (adulto mayor, embarazada, etc.)' },
+    PRIORITARIO: {
+      description: 'Turno con prioridad (adulto mayor, embarazada, etc.)',
+    },
     URGENTE: { description: 'Turno urgente / emergencia' },
   },
 });
@@ -42,13 +44,22 @@ export class Turno {
   @Field(() => ID, { description: 'ID del paciente' })
   pacienteId: string;
 
-  @Field(() => ID, { nullable: true, description: 'ID del médico asignado (opcional)' })
+  @Field(() => ID, {
+    nullable: true,
+    description: 'ID del médico asignado (opcional)',
+  })
   medicoId?: string;
 
-  @Field(() => Int, { nullable: true, description: 'ID de la especialidad requerida' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'ID de la especialidad requerida',
+  })
   especialidadId?: number;
 
-  @Field(() => Int, { nullable: true, description: 'ID del hospital donde se atiende el turno' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'ID del hospital donde se atiende el turno',
+  })
   hospitalId?: number;
 
   @Field(() => Int, { description: 'Número de turno asignado en el día' })
@@ -60,13 +71,19 @@ export class Turno {
   @Field(() => EstadoTurno, { description: 'Estado actual del turno' })
   estado: EstadoTurno;
 
-  @Field(() => Int, { nullable: true, description: 'Posición en la cola de espera' })
+  @Field(() => Int, {
+    nullable: true,
+    description: 'Posición en la cola de espera',
+  })
   posicionCola?: number;
 
   @Field({ nullable: true, description: 'Fecha y hora en que fue llamado' })
   llamadoEn?: Date;
 
-  @Field({ nullable: true, description: 'Fecha y hora en que fue atendido/completado' })
+  @Field({
+    nullable: true,
+    description: 'Fecha y hora en que fue atendido/completado',
+  })
   atendidoEn?: Date;
 
   @Field({ description: 'Fecha del turno (solo fecha, sin hora)' })
@@ -78,12 +95,18 @@ export class Turno {
 
 @ObjectType({ description: 'Evento emitido por subscripción de turnos' })
 export class TurnoEvento {
-  @Field({ description: 'Tipo de evento: CREADO | LLAMADO | EN_CONSULTA | ATENDIDO | CANCELADO' })
+  @Field({
+    description:
+      'Tipo de evento: CREADO | LLAMADO | EN_CONSULTA | ATENDIDO | CANCELADO',
+  })
   tipo: string;
 
   @Field(() => Turno, { description: 'Turno afectado' })
   turno: Turno;
 
-  @Field({ nullable: true, description: 'Mensaje adicional para mostrar al paciente' })
+  @Field({
+    nullable: true,
+    description: 'Mensaje adicional para mostrar al paciente',
+  })
   mensaje?: string;
 }

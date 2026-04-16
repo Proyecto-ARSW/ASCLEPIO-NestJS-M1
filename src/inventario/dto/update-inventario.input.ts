@@ -5,7 +5,10 @@ import { IsInt, IsOptional, IsString, Min } from 'class-validator';
  * Al actualizar stock_actual o stock_minimo, el trigger `trg_disponibilidad_medicamento`
  * recalcula automáticamente el campo `disponibilidad` y registra `actualizado_en`.
  */
-@InputType({ description: 'Datos para actualizar el inventario de un medicamento en una sede' })
+@InputType({
+  description:
+    'Datos para actualizar el inventario de un medicamento en una sede',
+})
 export class UpdateInventarioInput {
   @IsInt()
   @Min(1)

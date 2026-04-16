@@ -14,8 +14,10 @@ export class RabbitmqService implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.client.connect();
-    } catch (err) {
-      this.logger.warn(`RabbitMQ connection failed at startup: ${err.message}. Events will be retried on emit.`);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `RabbitMQ connection failed at startup: ${this.getErrorMessage(error)}. Events will be retried on emit.`,
+      );
     }
   }
 
@@ -44,15 +46,22 @@ export class RabbitmqService implements OnModuleInit {
           appointmentId: cita.id,
         })
         .subscribe({
-          error: (err) =>
-            this.logger.error(`Failed to emit appointment-created: ${err.message}`),
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit appointment-created: ${this.getErrorMessage(error)}`,
+            ),
         });
-    } catch (err) {
-      this.logger.error(`notifyAppointmentCreated error: ${err.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyAppointmentCreated error: ${this.getErrorMessage(error)}`,
+      );
     }
   }
 
-  async notifyAppointmentCancelled(citaId: string, cancellationReason?: string): Promise<void> {
+  async notifyAppointmentCancelled(
+    citaId: string,
+    cancellationReason?: string,
+  ): Promise<void> {
     try {
       const cita = await this.prisma.citas.findUnique({
         where: { id: citaId },
@@ -77,24 +86,42 @@ export class RabbitmqService implements OnModuleInit {
           cancellationReason,
         })
         .subscribe({
-          error: (err) =>
-            this.logger.error(`Failed to emit appointment-cancelled: ${err.message}`),
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit appointment-cancelled: ${this.getErrorMessage(error)}`,
+            ),
         });
-    } catch (err) {
-      this.logger.error(`notifyAppointmentCancelled error: ${err.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyAppointmentCancelled error: ${this.getErrorMessage(error)}`,
+      );
     }
   }
 
-  notifyUserRegistered(email: string, name: string, verificationUrl?: string): void {
+  notifyUserRegistered(
+    email: string,
+    name: string,
+    verificationUrl?: string,
+  ): void {
     try {
       this.client
         .emit('notification.user.registered', { email, name, verificationUrl })
         .subscribe({
-          error: (err) =>
-            this.logger.error(`Failed to emit user-registered: ${err.message}`),
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit user-registered: ${this.getErrorMessage(error)}`,
+            ),
         });
-    } catch (err) {
-      this.logger.error(`notifyUserRegistered error: ${err.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyUserRegistered error: ${this.getErrorMessage(error)}`,
+      );
     }
   }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : 'Unknown error';
+  }
 }
+
+// Daniel Useche

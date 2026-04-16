@@ -26,9 +26,29 @@ export class MedicinesService {
     return this.mapToEntity(med);
   }
 
-  async findAll(soloActivos = true): Promise<Medicine[]> {
+  async findAll(soloActivos = true, busqueda?: string): Promise<Medicine[]> {
     const meds = await this.prisma.medicamentos.findMany({
-      where: soloActivos ? { activo: true } : undefined,
+      where: {
+        ...(soloActivos ? { activo: true } : {}),
+        ...(busqueda
+          ? {
+              OR: [
+                {
+                  nombre_comercial: {
+                    contains: busqueda,
+                    mode: 'insensitive' as const,
+                  },
+                },
+                {
+                  nombre_generico: {
+                    contains: busqueda,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
       orderBy: { nombre_comercial: 'asc' },
     });
     return meds.map((m) => this.mapToEntity(m));
@@ -36,7 +56,8 @@ export class MedicinesService {
 
   async findOne(id: number): Promise<Medicine> {
     const med = await this.prisma.medicamentos.findUnique({ where: { id } });
-    if (!med) throw new NotFoundException(`Medicamento con ID "${id}" no encontrado`);
+    if (!med)
+      throw new NotFoundException(`Medicamento con ID "${id}" no encontrado`);
     return this.mapToEntity(med);
   }
 
@@ -45,14 +66,30 @@ export class MedicinesService {
     const updated = await this.prisma.medicamentos.update({
       where: { id },
       data: {
-        ...(input.nombreComercial !== undefined && { nombre_comercial: input.nombreComercial }),
-        ...(input.nombreGenerico !== undefined && { nombre_generico: input.nombreGenerico }),
-        ...(input.categoriaId !== undefined && { categoria_id: input.categoriaId }),
-        ...(input.descripcion !== undefined && { descripcion: input.descripcion }),
-        ...(input.indicaciones !== undefined && { indicaciones: input.indicaciones }),
-        ...(input.contraindicaciones !== undefined && { contraindicaciones: input.contraindicaciones }),
-        ...(input.presentacion !== undefined && { presentacion: input.presentacion }),
-        ...(input.requiereReceta !== undefined && { requiere_receta: input.requiereReceta }),
+        ...(input.nombreComercial !== undefined && {
+          nombre_comercial: input.nombreComercial,
+        }),
+        ...(input.nombreGenerico !== undefined && {
+          nombre_generico: input.nombreGenerico,
+        }),
+        ...(input.categoriaId !== undefined && {
+          categoria_id: input.categoriaId,
+        }),
+        ...(input.descripcion !== undefined && {
+          descripcion: input.descripcion,
+        }),
+        ...(input.indicaciones !== undefined && {
+          indicaciones: input.indicaciones,
+        }),
+        ...(input.contraindicaciones !== undefined && {
+          contraindicaciones: input.contraindicaciones,
+        }),
+        ...(input.presentacion !== undefined && {
+          presentacion: input.presentacion,
+        }),
+        ...(input.requiereReceta !== undefined && {
+          requiere_receta: input.requiereReceta,
+        }),
       },
     });
     return this.mapToEntity(updated);

@@ -62,8 +62,11 @@ export class NotificationsService {
 
   /** Marcar una notificación específica como leída */
   async markAsRead(id: string): Promise<Notificacion> {
-    const notif = await this.prisma.notificaciones.findUnique({ where: { id } });
-    if (!notif) throw new NotFoundException(`Notificación "${id}" no encontrada`);
+    const notif = await this.prisma.notificaciones.findUnique({
+      where: { id },
+    });
+    if (!notif)
+      throw new NotFoundException(`Notificación "${id}" no encontrada`);
 
     const updated = await this.prisma.notificaciones.update({
       where: { id },
@@ -83,8 +86,11 @@ export class NotificationsService {
 
   /** Eliminar una notificación */
   async remove(id: string): Promise<Notificacion> {
-    const notif = await this.prisma.notificaciones.findUnique({ where: { id } });
-    if (!notif) throw new NotFoundException(`Notificación "${id}" no encontrada`);
+    const notif = await this.prisma.notificaciones.findUnique({
+      where: { id },
+    });
+    if (!notif)
+      throw new NotFoundException(`Notificación "${id}" no encontrada`);
     await this.prisma.notificaciones.delete({ where: { id } });
     return this.mapToEntity(notif);
   }

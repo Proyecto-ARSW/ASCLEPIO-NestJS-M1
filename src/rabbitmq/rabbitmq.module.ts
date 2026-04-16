@@ -18,7 +18,9 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
             // get() en lugar de getOrThrow(): si RABBITMQ_URL no está configurado en
             // Azure App Settings, la app NO crashea — el módulo arranca en modo degradado
             // y los eventos de notificación fallarán silenciosamente (warn en el log).
-            urls: [config.get<string>('RABBITMQ_URL') ?? 'amqp://localhost:5672'],
+            urls: [
+              config.get<string>('RABBITMQ_URL') ?? 'amqp://localhost:5672',
+            ],
             queue: 'email.queue',
             queueOptions: { durable: true },
             // socketOptions.reconnectTimeInSeconds: si RabbitMQ no está disponible al

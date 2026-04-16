@@ -26,7 +26,9 @@ export class Nurse {
   @Field(() => Int, { description: 'ID del nivel de formación (FK formacion)' })
   nivelFormacion: number;
 
-  @Field(() => Int, { description: 'ID del área de especialización (FK especialidades)' })
+  @Field(() => Int, {
+    description: 'ID del área de especialización (FK especialidades)',
+  })
   areaEspecializacion: number;
 
   @Field({ description: '¿Tiene certificación de triage?' })

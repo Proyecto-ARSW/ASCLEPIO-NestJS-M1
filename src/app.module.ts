@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'path';
+import { join } from 'node:path';
 import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
@@ -22,10 +23,36 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
+import { EncryptionModule } from './shared/encryption/encryption.module';
+import type { Request } from 'express';
+import { TriageModule } from './triage/triage.module';
 
 @Module({
   imports: [
     ConfigModuleCustom,
+    /**
+     * ThrottlerModule limita la cantidad de requests por IP en una ventana de tiempo.
+     * Se definen dos perfiles:
+     * - "default": 100 req/min — tráfico normal de la app
+     * - "auth": 10 req/15min — endpoints de login/register para frenar brute-force
+     * El ThrottlerGuard registrado como APP_GUARD aplica el perfil "default" a
+     * todos los endpoints; los endpoints críticos sobreescriben con @Throttle({ auth: ... })
+     */
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 500,
+      },
+      {
+        name: 'auth',
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
+    EncryptionModule,
     RabbitmqModule,
     AuthModule,
     UsersModule,
@@ -34,16 +61,12 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      // En producción, autoSchemaFile:true mantiene el schema en memoria sin
-      // escribir al disco. Evita race conditions entre instancias y no depende
-      // de permisos de escritura en el directorio de despliegue de Azure.
-      // En desarrollo, escribe el archivo para que IDEs y herramientas lo lean.
       autoSchemaFile:
         process.env.NODE_ENV === 'production'
           ? true
           : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      context: ({ req }) => ({ req }),
+      context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
       subscriptions: {
@@ -74,8 +97,16 @@ import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
+    TriageModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AppThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
+
+// Daniel Useche

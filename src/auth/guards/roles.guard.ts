@@ -9,6 +9,9 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import type { Request } from 'express';
+
+type AuthenticatedRequest = Request & { user?: JwtPayload };
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -24,7 +27,7 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
     const request = this.getRequest(context);
-    const user: JwtPayload = request.user;
+    const user = request.user;
 
     if (!user) {
       throw new ForbiddenException('No autenticado');
@@ -39,11 +42,17 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 
-  private getRequest(context: ExecutionContext) {
+  private getRequest(context: ExecutionContext): AuthenticatedRequest {
     const ctxType = context.getType<string>();
     if (ctxType === 'http') {
-      return context.switchToHttp().getRequest();
+      return context.switchToHttp().getRequest<AuthenticatedRequest>();
     }
-    return GqlExecutionContext.create(context).getContext().req;
+
+    const gqlContext = GqlExecutionContext.create(context).getContext<{
+      req: AuthenticatedRequest;
+    }>();
+    return gqlContext.req;
   }
 }
+
+// Daniel Useche

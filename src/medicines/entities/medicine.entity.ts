@@ -23,7 +23,10 @@ export class Medicine {
   @Field({ nullable: true, description: 'Contraindicaciones' })
   contraindicaciones?: string;
 
-  @Field({ nullable: true, description: 'Presentación (tabletas, jarabe, etc.)' })
+  @Field({
+    nullable: true,
+    description: 'Presentación (tabletas, jarabe, etc.)',
+  })
   presentacion?: string;
 
   @Field({ description: '¿Requiere receta médica?' })

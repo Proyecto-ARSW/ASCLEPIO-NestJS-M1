@@ -22,6 +22,7 @@ import { SelectHospitalDto } from './dto/select-hospital.dto';
 import { JoinHospitalDto } from './dto/join-hospital.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
+import { EncryptionService } from 'src/shared/encryption/encryption.service';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly rabbitmqService: RabbitmqService,
+    // EncryptionService es global (@Global en EncryptionModule) — disponible sin importar el módulo
+    private readonly enc: EncryptionService,
   ) {}
 
   // ── REGISTRO ─────────────────────────────────────────────────────────────────
@@ -37,10 +40,14 @@ export class AuthService {
     const rol = dto.rol ?? RolUsuario.PACIENTE;
 
     if (rol === RolUsuario.MEDICO && !dto.medicoData) {
-      throw new BadRequestException('medicoData es requerido para el rol MEDICO');
+      throw new BadRequestException(
+        'medicoData es requerido para el rol MEDICO',
+      );
     }
     if (rol === RolUsuario.ENFERMERO && !dto.enfermeroData) {
-      throw new BadRequestException('enfermeroData es requerido para el rol ENFERMERO');
+      throw new BadRequestException(
+        'enfermeroData es requerido para el rol ENFERMERO',
+      );
     }
     if (
       rol === RolUsuario.ENFERMERO &&
@@ -61,16 +68,25 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (emailExiste) {
-      throw new ConflictException(`Ya existe un usuario con el email "${dto.email}"`);
+      throw new ConflictException(
+        `Ya existe un usuario con el email "${dto.email}"`,
+      );
     }
 
-    let hospital: { id: number; nombre: string; departamento: string; ciudad: string } | null = null;
+    let hospital: {
+      id: number;
+      nombre: string;
+      departamento: string;
+      ciudad: string;
+    } | null = null;
     if (dto.hospitalId) {
       hospital = await this.prisma.hospitales.findUnique({
         where: { id: dto.hospitalId },
       });
       if (!hospital) {
-        throw new NotFoundException(`Hospital con ID ${dto.hospitalId} no encontrado o inactivo`);
+        throw new NotFoundException(
+          `Hospital con ID ${dto.hospitalId} no encontrado o inactivo`,
+        );
       }
     }
 
@@ -113,11 +129,16 @@ export class AuthService {
           data: {
             usuario_id: nuevoUsuario.id,
             fecha_nacimiento: dto.pacienteData?.fechaNacimiento,
-            tipo_sangre: dto.pacienteData?.tipoSangre,
-            numero_documento: dto.pacienteData?.numeroDocumento,
+            tipo_sangre: this.enc.encryptOrNull(dto.pacienteData?.tipoSangre),
+            numero_documento: this.enc.encryptOrNull(
+              dto.pacienteData?.numeroDocumento,
+            ),
+            numero_documento_hmac: this.enc.hmacOrNull(
+              dto.pacienteData?.numeroDocumento,
+            ),
             tipo_documento: dto.pacienteData?.tipoDocumento ?? 'CC',
             eps: dto.pacienteData?.eps,
-            alergias: dto.pacienteData?.alergias,
+            alergias: this.enc.encryptOrNull(dto.pacienteData?.alergias),
           },
         });
       } else if (rol === RolUsuario.MEDICO && dto.medicoData) {
@@ -136,7 +157,8 @@ export class AuthService {
             numero_registro: dto.enfermeroData.numeroRegistro,
             nivel_formacion: dto.enfermeroData.nivelFormacion,
             area_especializacion: dto.enfermeroData.areaEspecializacion!,
-            certificacion_triage: dto.enfermeroData.certificacionTriage ?? false,
+            certificacion_triage:
+              dto.enfermeroData.certificacionTriage ?? false,
             fecha_certificacion: dto.enfermeroData.fechaCertificacion,
           },
         });
@@ -161,7 +183,10 @@ export class AuthService {
       rol: usuario.rol as RolUsuario,
       nombre: usuario.nombre,
       apellido: usuario.apellido,
-      ...(hospital && { hospitalId: hospital.id, hospitalNombre: hospital.nombre }),
+      ...(hospital && {
+        hospitalId: hospital.id,
+        hospitalNombre: hospital.nombre,
+      }),
     };
 
     this.rabbitmqService.notifyUserRegistered(
@@ -344,6 +369,11 @@ export class AuthService {
     departamento: string;
     ciudad: string;
   }): HospitalBasicDto {
-    return { id: h.id, nombre: h.nombre, departamento: h.departamento, ciudad: h.ciudad };
+    return {
+      id: h.id,
+      nombre: h.nombre,
+      departamento: h.departamento,
+      ciudad: h.ciudad,
+    };
   }
 }
