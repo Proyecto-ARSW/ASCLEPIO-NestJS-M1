@@ -1,7 +1,7 @@
 # Multi-stage build for ASCLEPIO NestJS
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN pnpm build
 RUN pnpm prune --prod
 
 # Stage 2: Runtime — imagen mínima, sin herramientas de build ni pnpm
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Usuario no-root: principio de mínimo privilegio en el contenedor
 RUN addgroup -S app && adduser -S app -G app
