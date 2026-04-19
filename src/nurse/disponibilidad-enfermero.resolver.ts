@@ -8,7 +8,7 @@ import { RolUsuario } from '../users/enums/rol-usuario.enum';
 
 /**
  * Flujo de disponibilidad de enfermero:
- *  1. ADMIN o RECEPCIONISTA crean bloques de disponibilidad por día/hora.
+ *  1. ADMIN, RECEPCIONISTA o ENFERMERO crean/actualizan bloques de disponibilidad por día/hora.
  *  2. El sistema valida unicidad (enfermero_id, dia_semana, hora_inicio) a nivel BD.
  *  3. Se puede desactivar toda la disponibilidad de un enfermero sin eliminar los registros.
  */
@@ -16,7 +16,7 @@ import { RolUsuario } from '../users/enums/rol-usuario.enum';
 export class DisponibilidadEnfermeroResolver {
   constructor(private readonly dispService: DisponibilidadEnfermeroService) {}
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA, RolUsuario.ENFERMERO)
   @Mutation(() => DisponibilidadEnfermero, {
     description: 'Crea un bloque de disponibilidad horaria para un enfermero',
   })
@@ -48,7 +48,7 @@ export class DisponibilidadEnfermeroResolver {
     return this.dispService.findOne(id);
   }
 
-  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA)
+  @Auth(RolUsuario.ADMIN, RolUsuario.RECEPCIONISTA, RolUsuario.ENFERMERO)
   @Mutation(() => DisponibilidadEnfermero, {
     description: 'Actualiza un bloque de disponibilidad de enfermero',
   })
