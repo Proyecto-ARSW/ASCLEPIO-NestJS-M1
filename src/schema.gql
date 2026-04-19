@@ -769,6 +769,22 @@ type Mutation {
 
   """Revoca un consentimiento de paciente (registra fecha de revocación)"""
   revocarConsentimiento(id: Int!): ConsentimientoPaciente!
+
+  """Agrega comentario medico al procedimiento."""
+  triageAddComment(input: TriageCommentInput!, procedureId: String!): TriageProcedure!
+
+  """
+  Registra sintomas por audio (base64) usando el id de paciente del JWT autenticado.
+  """
+  triageCreateFromAudio(input: TriageAudioInput!): TriageProcedure!
+
+  """
+  Registra sintomas por texto usando el id de paciente del JWT autenticado.
+  """
+  triageCreateFromText(input: TriageTextInput!): TriageProcedure!
+
+  """Actualiza signos vitales del procedimiento (solo enfermero o medico)."""
+  triageUpdateVitalSigns(input: TriageVitalSignsInput!, procedureId: String!): TriageProcedure!
   updateAppoinment(input: UpdateAppoinmentInput!): Appoinment!
 
   """Actualiza el nombre de una categoría de medicamento (ADMIN)"""
@@ -1050,6 +1066,17 @@ type Query {
 
   """Lista todas las sedes"""
   sedes: [Sede!]!
+
+  """Obtiene los procedimientos de triage del paciente autenticado."""
+  triageMyProcedures(limit: Int = 10): [TriageProcedure!]!
+
+  """Obtiene la historia clinica preliminar en formato JSON estructurado."""
+  triagePreliminaryHistory(procedureId: String!): TriagePreliminaryHistory!
+
+  """
+  Obtiene el procedimiento completo de triage para visualizacion clinica.
+  """
+  triageProcedure(procedureId: String!): TriageProcedure!
   turno(id: ID!): Turno!
   turnosEnEspera(hospitalId: Int, medicoId: ID): Int!
   turnosPorHospital(estado: EstadoTurno, fecha: DateTime, hospitalId: Int): [Turno!]!
@@ -1158,6 +1185,75 @@ enum TipoTurno {
 
   """Turno urgente / emergencia"""
   URGENTE
+}
+
+input TriageAudioInput {
+  audioBase64: String!
+  fileName: String!
+  mimeType: String
+}
+
+type TriageComment {
+  author: String!
+  comment: String!
+  createdAt: String!
+  id: String!
+}
+
+input TriageCommentInput {
+  comment: String!
+}
+
+type TriagePreliminaryHistory {
+  advertenciaIA: String!
+  antecedentes: [String!]!
+  comentario: String!
+  comentariosIA: String!
+  embarazo: Boolean!
+  idpaciente: String!
+  nivelPrioridad: Int!
+  posiblesCausas: [String!]!
+  sintomas: [String!]!
+}
+
+type TriageProcedure {
+  comments: [TriageComment!]
+  confidenceScore: Float!
+  createdAt: String
+  inputType: String!
+  patientId: String!
+  preliminaryHistory: TriagePreliminaryHistory!
+  procedureId: String!
+  status: String!
+  transcript: String!
+  updatedAt: String
+  vitalSigns: TriageVitalSigns
+}
+
+input TriageTextInput {
+  textInput: String!
+}
+
+type TriageVitalSigns {
+  diastolicBpMmhg: Int
+  heartRateBpm: Int
+  heightCm: Float
+  oxygenSaturationPct: Int
+  respiratoryRateBpm: Int
+  systolicBpMmhg: Int
+  temperatureC: Float
+  weightKg: Float
+}
+
+input TriageVitalSignsInput {
+  diastolicBpMmhg: Int
+  heartRateBpm: Int
+  heightCm: Float
+  oxygenSaturationPct: Int
+  respiratoryRateBpm: Int
+  systolicBpMmhg: Int
+  temperatureC: Float
+  weightKg: Float
 }
 
 """Turno en la cola de atención de un hospital"""
