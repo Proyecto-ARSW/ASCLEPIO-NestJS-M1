@@ -769,6 +769,7 @@ type Mutation {
 
   """Revoca un consentimiento de paciente (registra fecha de revocación)"""
   revocarConsentimiento(id: Int!): ConsentimientoPaciente!
+<<<<<<< HEAD
 
   """Agrega comentario medico al procedimiento."""
   triageAddComment(input: TriageCommentInput!, procedureId: String!): TriageProcedure!
@@ -785,6 +786,8 @@ type Mutation {
 
   """Actualiza signos vitales del procedimiento (solo enfermero o medico)."""
   triageUpdateVitalSigns(input: TriageVitalSignsInput!, procedureId: String!): TriageProcedure!
+=======
+>>>>>>> parent of 81defe5 (Merge branch 'jwt-for-voice' into develop)
   updateAppoinment(input: UpdateAppoinmentInput!): Appoinment!
 
   """Actualiza el nombre de una categoría de medicamento (ADMIN)"""
@@ -1051,6 +1054,7 @@ type Query {
 
   """Lista todas las sedes"""
   sedes: [Sede!]!
+<<<<<<< HEAD
 
   """Obtiene los procedimientos de triage del paciente autenticado."""
   triageMyProcedures(limit: Int = 10): [TriageProcedure!]!
@@ -1062,6 +1066,8 @@ type Query {
   Obtiene el procedimiento completo de triage para visualizacion clinica.
   """
   triageProcedure(procedureId: String!): TriageProcedure!
+=======
+>>>>>>> parent of 81defe5 (Merge branch 'jwt-for-voice' into develop)
   turno(id: ID!): Turno!
   turnosEnEspera(hospitalId: Int, medicoId: ID): Int!
   turnosPorHospital(estado: EstadoTurno, fecha: DateTime, hospitalId: Int): [Turno!]!
@@ -1172,6 +1178,7 @@ enum TipoTurno {
   URGENTE
 }
 
+<<<<<<< HEAD
 input TriageAudioInput {
   audioBase64: String!
   fileName: String!
@@ -1241,6 +1248,8 @@ input TriageVitalSignsInput {
   weightKg: Float
 }
 
+=======
+>>>>>>> parent of 81defe5 (Merge branch 'jwt-for-voice' into develop)
 """Turno en la cola de atención de un hospital"""
 type Turno {
   """Fecha y hora en que fue atendido/completado"""
