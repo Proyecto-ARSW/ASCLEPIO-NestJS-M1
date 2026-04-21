@@ -5,7 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'node:path';
+import { join } from 'path';
 import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
@@ -27,7 +27,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 import type { Request } from 'express';
-import { TriageModule } from './triage/triage.module';
 
 @Module({
   imports: [
@@ -97,7 +96,6 @@ import { TriageModule } from './triage/triage.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
-    TriageModule,
   ],
   controllers: [],
   providers: [
