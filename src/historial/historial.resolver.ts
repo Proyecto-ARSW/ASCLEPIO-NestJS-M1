@@ -27,8 +27,12 @@ export class HistorialResolver {
   })
   createHistorial(
     @Args('input') input: CreateHistorialInput,
+    @CurrentUser() currentUser: JwtPayload,
   ): Promise<HistorialMedico> {
-    return this.historialService.create(input);
+    if (!currentUser.hospitalId) {
+      throw new Error('Hospital ID is required');
+    }
+    return this.historialService.create(input, currentUser.hospitalId);
   }
 
   @Auth()
@@ -78,3 +82,4 @@ export class HistorialResolver {
     return this.historialService.update(input.id, input, currentUser);
   }
 }
+// Daniel Useche

@@ -9,15 +9,22 @@ import { UpdateHistorialInput } from './dto/update-historial.input';
 import { HistorialMedico } from './entities/historial-medico.entity';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RolUsuario } from '../users/enums/rol-usuario.enum';
+import { ClinicalEventsPublisher } from '../rabbitmq/clinical-events.publisher';
 
 @Injectable()
 export class HistorialService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventsPublisher: ClinicalEventsPublisher,
+  ) {}
 
   /**
    * Solo MEDICO o ADMIN pueden crear registros en el historial.
    */
-  async create(input: CreateHistorialInput): Promise<HistorialMedico> {
+  async create(
+    input: CreateHistorialInput,
+    hospitalId: number,
+  ): Promise<HistorialMedico> {
     const historial = await this.prisma.historial_medico.create({
       data: {
         paciente_id: input.pacienteId,
@@ -28,6 +35,19 @@ export class HistorialService {
         observaciones: input.observaciones,
       },
     });
+
+    const notes = [input.diagnostico, input.tratamiento, input.observaciones]
+      .filter(Boolean)
+      .join(' | ');
+
+    this.eventsPublisher.publish('record.created', {
+      recordId: historial.id,
+      patientId: historial.paciente_id,
+      hospitalId,
+      notes: notes || '',
+      version: 1,
+    });
+
     return this.mapToEntity(historial);
   }
 
@@ -91,6 +111,23 @@ export class HistorialService {
         }),
       },
     });
+
+    const notes = [
+      updated.diagnostico,
+      updated.tratamiento,
+      updated.observaciones,
+    ]
+      .filter(Boolean)
+      .join(' | ');
+
+    this.eventsPublisher.publish('record.updated', {
+      recordId: updated.id,
+      patientId: updated.paciente_id,
+      hospitalId: currentUser.hospitalId,
+      notes: notes || '',
+      version: 2,
+    });
+
     return this.mapToEntity(updated);
   }
 
@@ -116,3 +153,4 @@ export class HistorialService {
     };
   }
 }
+// Daniel Useche
