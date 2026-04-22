@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RabbitmqService } from './rabbitmq.service';
+import { ClinicalEventsPublisher } from './clinical-events.publisher';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
 @Global()
@@ -33,8 +34,8 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
       },
     ]),
   ],
-  providers: [RabbitmqService, PrismaService],
-  exports: [RabbitmqService],
+  providers: [RabbitmqService, ClinicalEventsPublisher, PrismaService],
+  exports: [RabbitmqService, ClinicalEventsPublisher],
 })
 export class RabbitmqModule {}
 
