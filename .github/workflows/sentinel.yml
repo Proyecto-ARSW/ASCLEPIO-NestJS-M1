@@ -1,9 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Sentinel Security Gate — workflow reutilizable- Daniel Eduardo Useche FDSI
 # ─────────────────────────────────────────────────────────────────────────────
-# Configuración en el repo destino (Settings → Variables / Secrets):
-#
-#   Variables (vars.*):
 #     SENTINEL_GATE_URL    URL del gate desplegado
 #                          default: https://sentinelia-avd7b2gabqe3b2g8.brazilsouth-01.azurewebsites.net
 #     SENTINEL_AI_ENABLED  "true" | "false"   (default: "true")
