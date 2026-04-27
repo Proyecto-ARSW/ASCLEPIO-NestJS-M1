@@ -99,6 +99,22 @@ export class SyncController {
     };
   }
 
+  @Get('enfermeros/usuario/:usuarioId')
+  async getEnfermeroIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    const enfermero = await this.prisma.enfermeros.findFirst({
+      where: { usuario_id: usuarioId },
+      select: { id: true },
+    });
+
+    if (!enfermero) {
+      throw new NotFoundException(
+        `No existe enfermero asociado al usuario ${usuarioId}`,
+      );
+    }
+
+    return { id: enfermero.id };
+  }
+
   @Get('medicos/:id')
   async getMedico(@Param('id') id: string) {
     const medico = await this.prisma.medicos.findUnique({ where: { id } });
