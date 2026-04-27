@@ -1,10 +1,10 @@
-
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TriageWebhookController } from './triage-webhook.controller';
-import { ApiKeyGuard } from './guards/api-key.guard';
+import { RabbitmqModule } from '../rabbitmq/rabbitmq.module';
 
 @Module({
+  imports: [ConfigModule, RabbitmqModule],
   controllers: [TriageWebhookController],
-  providers: [ApiKeyGuard],
 })
 export class TriageWebhookModule {}

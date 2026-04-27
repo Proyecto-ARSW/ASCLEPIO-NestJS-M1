@@ -122,6 +122,83 @@ export class RabbitmqService implements OnModuleInit {
   private getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : 'Unknown error';
   }
+
+    notifyTriageTurnoCreado(payload: {
+    turno_id: string;
+    numero_turno: number;
+    hospital_id: number;
+    paciente_id: string;
+    tipo_turno: string;
+    estado: string;
+    fecha: string;
+  }): void {
+    try {
+      this.client
+        .emit('notification.triage.turno_creado', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.turno_creado: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriageTurnoCreado error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  notifyTriageTurnoCancelado(payload: {
+    turno_id: string;
+    hospital_id: number;
+    paciente_id: string;
+    numero_turno: number;
+    razon: string;
+  }): void {
+    try {
+      this.client
+        .emit('notification.triage.turno_cancelado', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.turno_cancelado: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriageTurnoCancelado error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  notifyTriagePacienteAtendido(payload: {
+    turno_id: string;
+    numero_turno: number;
+    hospital_id: number;
+    paciente_id: string;
+    medico_id: string;
+    nivel_triage: number;
+    tiempo_espera_minutos: number;
+    tiempo_atencion_minutos: number;
+    diagnostico: string;
+    tratamiento: string;
+    observaciones?: string;
+  }): void {
+    try {
+      this.client
+        .emit('notification.triage.paciente_atendido', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.paciente_atendido: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriagePacienteAtendido error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
 }
 
 // Daniel Useche

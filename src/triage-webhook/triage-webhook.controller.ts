@@ -1,15 +1,13 @@
-// src/modules/triage-webhook/triage-webhook.controller.ts
-
 import { Controller, Post, Body, Logger, UseGuards } from '@nestjs/common';
 import { ApiKeyGuard } from './guards/api-key.guard';
-import { PrismaService } from '../prisma/prisma.service';
+import { RabbitmqService } from '../rabbitmq/rabbitmq.service';
 
 @Controller('webhooks/triage')
 @UseGuards(ApiKeyGuard)
 export class TriageWebhookController {
   private readonly logger = new Logger(TriageWebhookController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly rabbitmq: RabbitmqService) {}
 
   @Post('turno-creado')
   async handleTurnoCreado(
@@ -25,10 +23,10 @@ export class TriageWebhookController {
     },
   ) {
     this.logger.log(
-      `Webhook recibido: turno-creado - Turno: ${payload.turno_id}, Paciente: ${payload.paciente_id}`,
+      `Webhook: turno-creado — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
-
-    return { received: true, event: 'turno-creado' };
+    this.rabbitmq.notifyTriageTurnoCreado(payload);
+    return { received: true, event: 'turno-creado', turno_id: payload.turno_id };
   }
 
   @Post('turno-cancelado')
@@ -43,10 +41,10 @@ export class TriageWebhookController {
     },
   ) {
     this.logger.log(
-      `Webhook recibido: turno-cancelado - Turno: ${payload.turno_id}, Razón: ${payload.razon}`,
+      `Webhook: turno-cancelado — Turno #${payload.numero_turno}, Razón: ${payload.razon}`,
     );
-
-    return { received: true, event: 'turno-cancelado' };
+    this.rabbitmq.notifyTriageTurnoCancelado(payload);
+    return { received: true, event: 'turno-cancelado', turno_id: payload.turno_id };
   }
 
   @Post('paciente-atendido')
@@ -67,9 +65,9 @@ export class TriageWebhookController {
     },
   ) {
     this.logger.log(
-      `Webhook recibido: paciente-atendido - Turno: ${payload.turno_id}, Diagnóstico: ${payload.diagnostico}`,
+      `Webhook: paciente-atendido — Turno #${payload.numero_turno}, Dx: ${payload.diagnostico}`,
     );
-
-    return { received: true, event: 'paciente-atendido' };
+    this.rabbitmq.notifyTriagePacienteAtendido(payload);
+    return { received: true, event: 'paciente-atendido', turno_id: payload.turno_id };
   }
 }

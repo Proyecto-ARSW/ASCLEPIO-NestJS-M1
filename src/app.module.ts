@@ -28,6 +28,9 @@ import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 import type { Request } from 'express';
 import { TriageModule } from './triage/triage.module';
+import { TriageWebhookModule } from './triage-webhook/triage-webhook.module';
+import { SyncModule } from './sync/sync.module';
+
 
 @Module({
   imports: [
@@ -97,7 +100,9 @@ import { TriageModule } from './triage/triage.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
+    TriageWebhookModule,
     TriageModule,
+    SyncModule,
   ],
   controllers: [],
   providers: [
