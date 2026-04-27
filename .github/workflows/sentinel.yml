@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Sentinel Security Gate — workflow reutilizable
+# Sentinel Security Gate — workflow reutilizable- Daniel Eduardo Useche FDSI
 # ─────────────────────────────────────────────────────────────────────────────
 # Copia este archivo a .github/workflows/sentinel.yml en CUALQUIER proyecto
 # que tenga un Dockerfile. No requiere dependencias externas.
