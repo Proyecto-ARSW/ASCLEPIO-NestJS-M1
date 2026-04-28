@@ -1,13 +1,18 @@
 import { Controller, Post, Body, Logger, UseGuards } from '@nestjs/common';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service';
+import { TurnService } from '../turn/turn.service';
+import { TipoTurno } from '../turn/entities/turn.entity';
 
 @Controller('webhooks/triage')
 @UseGuards(ApiKeyGuard)
 export class TriageWebhookController {
   private readonly logger = new Logger(TriageWebhookController.name);
 
-  constructor(private readonly rabbitmq: RabbitmqService) {}
+  constructor(
+    private readonly rabbitmq: RabbitmqService,
+    private readonly turnService: TurnService,
+  ) {}
 
   @Post('turno-creado')
   async handleTurnoCreado(
@@ -25,7 +30,28 @@ export class TriageWebhookController {
     this.logger.log(
       `Webhook: turno-creado — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
+
     this.rabbitmq.notifyTriageTurnoCreado(payload);
+
+    try {
+      const tipo =
+        payload.tipo_turno === 'URGENCIA' ? TipoTurno.URGENTE : TipoTurno.NORMAL;
+
+      await this.turnService.create({
+        pacienteId: payload.paciente_id,
+        hospitalId: payload.hospital_id,
+        tipo,
+      });
+
+      this.logger.log(
+        `Turno de triage ingresado a la cola de M1 — Paciente: ${payload.paciente_id}`,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `No se pudo crear turno en M1 desde webhook de triage: ${error?.message}`,
+      );
+    }
+
     return { received: true, event: 'turno-creado', turno_id: payload.turno_id };
   }
 
