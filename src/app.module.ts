@@ -5,7 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { join } from 'node:path';
 import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
@@ -31,6 +30,8 @@ import { TriageModule } from './triage/triage.module';
 import { TriageWebhookModule } from './triage-webhook/triage-webhook.module';
 import { SyncModule } from './sync/sync.module';
 
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 @Module({
   imports: [
@@ -64,10 +65,7 @@ import { SyncModule } from './sync/sync.module';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile:
-        process.env.NODE_ENV === 'production'
-          ? true
-          : join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: true,
       sortSchema: true,
       context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
@@ -85,12 +83,9 @@ import { SyncModule } from './sync/sync.module';
         // pino-pretty solo en desarrollo: formatea logs de forma legible para el
         // desarrollador. En producción se omite para emitir JSON estructurado puro,
         // que Azure Monitor / Application Insights pueden ingestar directamente.
-        transport:
-          process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty' }
-            : undefined,
+        transport: isProduction ? undefined : { target: 'pino-pretty' },
         // En producción, nivel info es suficiente. debug añade demasiado ruido.
-        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        level: isProduction ? 'info' : 'debug',
       },
     }),
     HealthModule,
