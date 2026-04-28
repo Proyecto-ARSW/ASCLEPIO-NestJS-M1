@@ -1,9 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Sentinel Security Gate — workflow reutilizable
 # ─────────────────────────────────────────────────────────────────────────────
-# Copia este archivo a .github/workflows/sentinel.yml en CUALQUIER proyecto
-# que tenga un Dockerfile. No requiere dependencias externas.
-#
 # Configuración en el repo destino (Settings → Variables / Secrets):
 #
 #   Variables (vars.*):
