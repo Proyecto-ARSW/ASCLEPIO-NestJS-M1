@@ -16,6 +16,7 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3000;
   const frontendUrl =
     configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+  const allowedFrontendOrigins = [frontendUrl, 'http://localhost:5174'];
   const isProduction = process.env.NODE_ENV === 'production';
 
   /**
@@ -71,10 +72,10 @@ async function bootstrap() {
   setupSwagger(app);
 
   app.enableCors({
-    origin: frontendUrl,
+    origin: allowedFrontendOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   });
   app.enableShutdownHooks();
 
