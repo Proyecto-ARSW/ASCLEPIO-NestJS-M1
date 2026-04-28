@@ -81,12 +81,6 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   const logger = app.get(Logger);
-  logger.log(`API running on port :${port}`, 'Bootstrap');
-  logger.log(`Swagger docs → http://localhost:${port}/docs`, 'Bootstrap');
-  logger.log(
-    `GraphQL playground → http://localhost:${port}/graphql`,
-    'Bootstrap',
-  );
 }
 
 void bootstrap();
