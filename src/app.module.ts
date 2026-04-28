@@ -43,13 +43,13 @@ import { TriageModule } from './triage/triage.module';
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 60_000,
-        limit: 500,
+        ttl: 6_000,
+        limit: 50000,
       },
       {
         name: 'auth',
-        ttl: 60_000,
-        limit: 100,
+        ttl: 6_000,
+        limit: 100000,
       },
     ]),
     EncryptionModule,
