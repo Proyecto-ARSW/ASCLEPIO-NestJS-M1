@@ -12,6 +12,12 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
+  // Azure App Service (y cualquier reverse proxy) reenvía la IP real del cliente
+  // en el header X-Forwarded-For. Sin esta línea, Express reporta la IP del
+  // proxy como req.ip, haciendo que todos los usuarios compartan el mismo
+  // contador de rate-limit y se bloqueen entre sí con ThrottlerException.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') ?? 3000;
   const frontendUrl =
