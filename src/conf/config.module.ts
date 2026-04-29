@@ -25,6 +25,11 @@ import * as Joi from 'joi';
         // Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
         FIELD_ENCRYPTION_KEY: Joi.string().min(32).optional(),
         FIELD_ENCRYPTION_SALT: Joi.string().optional(),
+        // Rate limiting: ajustables por entorno sin redeployar código.
+        // default: 200 req/60s por IP; auth: 10 req/15min en login/register.
+        THROTTLE_TTL_MS: Joi.number().default(60_000),
+        THROTTLE_LIMIT: Joi.number().default(200),
+        THROTTLE_AUTH_LIMIT: Joi.number().default(10),
       }),
       validationOptions: {
         allowUnknown: true,
