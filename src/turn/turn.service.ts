@@ -406,6 +406,22 @@ export class TurnService {
     return this.mapToEntity(turno);
   }
 
+  async marcarTurnoUrgenteAtendido(
+    pacienteId: string,
+    hospitalId: number,
+  ): Promise<number> {
+    const result = await this.prisma.turnos.updateMany({
+      where: {
+        paciente_id: pacienteId,
+        hospital_id: hospitalId,
+        tipo: TipoTurno.URGENTE,
+        estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
+      },
+      data: { estado: EstadoTurno.ATENDIDO, atendido_en: new Date() },
+    });
+    return result.count;
+  }
+
   async contarEnEspera(hospitalId: number, medicoId?: string): Promise<number> {
     return this.prisma.turnos.count({
       where: {

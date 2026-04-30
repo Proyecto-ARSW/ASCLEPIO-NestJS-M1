@@ -91,8 +91,19 @@ export class TriageWebhookController {
     },
   ) {
     this.logger.log(
-      `Webhook: paciente-atendido — Turno #${payload.numero_turno}, Dx: ${payload.diagnostico}`,
+      `Webhook: paciente-atendido — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
+
+    try {
+      const updated = await this.turnService.marcarTurnoUrgenteAtendido(
+        payload.paciente_id,
+        payload.hospital_id,
+      );
+      this.logger.log(`Turnos URGENTE cerrados en M1: ${updated}`);
+    } catch (error: any) {
+      this.logger.error(`Error cerrando turnos URGENTE en M1: ${error?.message}`);
+    }
+
     this.rabbitmq.notifyTriagePacienteAtendido(payload);
     return { received: true, event: 'paciente-atendido', turno_id: payload.turno_id };
   }

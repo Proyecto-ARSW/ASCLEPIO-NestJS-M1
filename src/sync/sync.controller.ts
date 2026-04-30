@@ -81,6 +81,20 @@ export class SyncController {
     return this.mapPaciente(paciente);
   }
 
+  @Get('enfermeros/usuario/:usuarioId')
+  async getEnfermeroIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    const enfermero = await this.prisma.enfermeros.findFirst({
+      where: { usuario_id: usuarioId },
+      select: { id: true },
+    });
+    if (!enfermero) {
+      throw new NotFoundException(
+        `No existe enfermero asociado al usuario ${usuarioId}`,
+      );
+    }
+    return { id: enfermero.id };
+  }
+
   @Get('enfermeros/:id')
   async getEnfermero(@Param('id') id: string) {
     const enfermero = await this.prisma.enfermeros.findUnique({
@@ -99,20 +113,18 @@ export class SyncController {
     };
   }
 
-  @Get('enfermeros/usuario/:usuarioId')
-  async getEnfermeroIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
-    const enfermero = await this.prisma.enfermeros.findFirst({
+  @Get('medicos/usuario/:usuarioId')
+  async getMedicoIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    const medico = await this.prisma.medicos.findFirst({
       where: { usuario_id: usuarioId },
       select: { id: true },
     });
-
-    if (!enfermero) {
+    if (!medico) {
       throw new NotFoundException(
-        `No existe enfermero asociado al usuario ${usuarioId}`,
+        `No existe médico asociado al usuario ${usuarioId}`,
       );
     }
-
-    return { id: enfermero.id };
+    return { id: medico.id };
   }
 
   @Get('medicos/:id')
