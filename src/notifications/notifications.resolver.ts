@@ -26,18 +26,26 @@ export class NotificationsResolver {
 
   // ── QUERIES ──────────────────────────────────────────────────────────────────
 
-  /** Lista todas las notificaciones del usuario autenticado */
+  /** Lista las notificaciones más recientes del usuario autenticado */
   @Auth()
   @Query(() => [Notificacion], { name: 'notificaciones' })
-  findByUser(@CurrentUser() user: JwtPayload): Promise<Notificacion[]> {
-    return this.notificationsService.findByUser(user.sub);
+  findByUser(
+    @CurrentUser() user: JwtPayload,
+    @Args('take', { type: () => Int, defaultValue: 50, nullable: true })
+    take: number,
+  ): Promise<Notificacion[]> {
+    return this.notificationsService.findByUser(user.sub, take);
   }
 
   /** Solo las no leídas del usuario autenticado */
   @Auth()
   @Query(() => [Notificacion], { name: 'notificacionesSinLeer' })
-  findUnread(@CurrentUser() user: JwtPayload): Promise<Notificacion[]> {
-    return this.notificationsService.findUnread(user.sub);
+  findUnread(
+    @CurrentUser() user: JwtPayload,
+    @Args('take', { type: () => Int, defaultValue: 50, nullable: true })
+    take: number,
+  ): Promise<Notificacion[]> {
+    return this.notificationsService.findUnread(user.sub, take);
   }
 
   /** Conteo de no leídas (para badge en UI) */
