@@ -93,6 +93,12 @@ import type { Request } from 'express';
             : undefined,
         // En producción, nivel info es suficiente. debug añade demasiado ruido.
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        autoLogging: {
+          ignore: (req) => {
+            const url = req.url ?? '';
+            return url.startsWith('/health') || url.startsWith('/metrics');
+          },
+        },
       },
     }),
     HealthModule,

@@ -4,7 +4,14 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { randomBytes, scryptSync } from 'crypto';
+import { randomBytes, scrypt } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt) as (
+  password: string,
+  salt: string,
+  keylen: number,
+) => Promise<Buffer>;
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { EncryptionService } from '../shared/encryption/encryption.service';
 import { CreateUserInput } from './dto/create-user.input';
@@ -69,7 +76,7 @@ export class UsersService {
             nombre: input.nombre,
             apellido: input.apellido,
             email: input.email,
-            password_hash: this.hashPassword(input.password),
+            password_hash: await this.hashPassword(input.password),
             rol: RolUsuario.MEDICO,
             telefono: input.telefono,
           },
@@ -116,7 +123,7 @@ export class UsersService {
             nombre: input.nombre,
             apellido: input.apellido,
             email: input.email,
-            password_hash: this.hashPassword(input.password),
+            password_hash: await this.hashPassword(input.password),
             rol: RolUsuario.ENFERMERO,
             telefono: input.telefono,
           },
@@ -157,7 +164,7 @@ export class UsersService {
             nombre: input.nombre,
             apellido: input.apellido,
             email: input.email,
-            password_hash: this.hashPassword(input.password),
+            password_hash: await this.hashPassword(input.password),
             rol: RolUsuario.PACIENTE,
             telefono: input.telefono,
           },
@@ -205,7 +212,7 @@ export class UsersService {
           nombre: input.nombre,
           apellido: input.apellido,
           email: input.email,
-          password_hash: this.hashPassword(input.password),
+          password_hash: await this.hashPassword(input.password),
           rol,
           telefono: input.telefono,
         },
@@ -270,9 +277,9 @@ export class UsersService {
     return this.mapToEntity(deactivated);
   }
 
-  hashPassword(password: string): string {
+  async hashPassword(password: string): Promise<string> {
     const salt = randomBytes(16).toString('hex');
-    const hash = scryptSync(password, salt, 64).toString('hex');
+    const hash = (await scryptAsync(password, salt, 64)).toString('hex');
     return `${salt}:${hash}`;
   }
 

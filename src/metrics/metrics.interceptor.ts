@@ -83,6 +83,12 @@ export class MetricsInterceptor implements NestInterceptor {
     const method = req.method;
     const route = req.originalUrl || req.url || 'unknown';
 
+    // Health and metrics endpoints are frequently scraped. Skipping custom
+    // instrumentation avoids adding latency and cardinality churn for probes.
+    if (route.startsWith('/health') || route.startsWith('/metrics')) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       tap({
         next: () => {
