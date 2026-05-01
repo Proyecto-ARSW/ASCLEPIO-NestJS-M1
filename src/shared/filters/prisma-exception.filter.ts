@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { GqlArgumentsHost } from '@nestjs/graphql';
 import { Prisma } from 'generated/prisma/client';
-import { Response } from 'express';
+import type { FastifyReply } from 'fastify';
 
 @Catch(
   Prisma.PrismaClientKnownRequestError,
@@ -29,8 +29,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const ctxType = host.getType<string>();
 
     if (ctxType === 'http') {
-      const res = host.switchToHttp().getResponse<Response>();
-      return res.status(status).json({
+      const res = host.switchToHttp().getResponse<FastifyReply>();
+      return res.code(status).send({
         statusCode: status,
         message,
         error: HttpStatus[status],

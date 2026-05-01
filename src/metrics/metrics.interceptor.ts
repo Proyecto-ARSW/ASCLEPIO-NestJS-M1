@@ -9,7 +9,7 @@ import { tap } from 'rxjs/operators';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram, Counter } from 'prom-client';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import type { Request, Response } from 'express';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { GraphQLResolveInfo } from 'graphql';
 
 @Injectable()
@@ -78,10 +78,10 @@ export class MetricsInterceptor implements NestInterceptor {
 
     // REST HTTP
     const httpContext = context.switchToHttp();
-    const req = httpContext.getRequest<Request>();
-    const res = httpContext.getResponse<Response>();
+    const req = httpContext.getRequest<FastifyRequest>();
+    const res = httpContext.getResponse<FastifyReply>();
     const method = req.method;
-    const route = req.originalUrl || req.url || 'unknown';
+    const route = req.url || 'unknown';
 
     // Health and metrics endpoints are frequently scraped. Skipping custom
     // instrumentation avoids adding latency and cardinality churn for probes.

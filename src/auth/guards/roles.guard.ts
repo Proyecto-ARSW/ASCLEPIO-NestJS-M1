@@ -9,9 +9,9 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import type { Request } from 'express';
+import type { FastifyRequest } from 'fastify';
 
-type AuthenticatedRequest = Request & { user?: JwtPayload };
+type AuthenticatedRequest = FastifyRequest & { user?: JwtPayload };
 
 @Injectable()
 export class RolesGuard implements CanActivate {
