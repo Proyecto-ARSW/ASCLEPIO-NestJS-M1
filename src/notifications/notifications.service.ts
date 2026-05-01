@@ -36,19 +36,21 @@ export class NotificationsService {
   }
 
   /** Todas las notificaciones de un usuario, ordenadas por más recientes */
-  async findByUser(usuarioId: string): Promise<Notificacion[]> {
+  async findByUser(usuarioId: string, take = 50): Promise<Notificacion[]> {
     const notifs = await this.prisma.notificaciones.findMany({
       where: { usuario_id: usuarioId },
       orderBy: { creado_en: 'desc' },
+      take,
     });
     return notifs.map((n) => this.mapToEntity(n));
   }
 
   /** Solo las notificaciones no leídas de un usuario */
-  async findUnread(usuarioId: string): Promise<Notificacion[]> {
+  async findUnread(usuarioId: string, take = 50): Promise<Notificacion[]> {
     const notifs = await this.prisma.notificaciones.findMany({
       where: { usuario_id: usuarioId, leida: false },
       orderBy: { creado_en: 'desc' },
+      take,
     });
     return notifs.map((n) => this.mapToEntity(n));
   }

@@ -40,6 +40,7 @@ model citas {
   @@index([estado], map: "idx_citas_estado")
   @@index([medico_id, fecha_hora], map: "idx_citas_medico_fecha")
   @@index([paciente_id], map: "idx_citas_paciente")
+  @@index([fecha_hora, medico_id], map: "idx_citas_activas_fecha")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -78,6 +79,9 @@ model historial_medico {
   medicos       medicos   @relation(fields: [medico_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pacientes     pacientes @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   recetas       recetas[]
+
+  @@index([paciente_id, creado_en(sort: Desc)], map: "idx_historial_paciente_fecha")
+  @@index([medico_id, creado_en(sort: Desc)], map: "idx_historial_medico_fecha")
 }
 
 model inventario_medicamentos {
@@ -128,6 +132,8 @@ model medicos {
   especialidades        especialidades          @relation(fields: [especialidad_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuarios              usuarios                @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   turnos                turnos[]
+
+  @@index([especialidad_id, activo], map: "idx_medicos_especialidad_activo")
 }
 
 model notificaciones {
@@ -165,6 +171,8 @@ model pacientes {
   historial_medico         historial_medico[]
   usuarios                 usuarios                   @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   turnos                   turnos[]
+
+  @@index([usuario_id], map: "idx_pacientes_usuario")
 }
 
 model recetas {
@@ -177,6 +185,8 @@ model recetas {
   observaciones    String?
   historial_medico historial_medico @relation(fields: [historial_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   medicamentos     medicamentos     @relation(fields: [medicamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([historial_id], map: "idx_recetas_historial")
 }
 
 model refresh_tokens {
@@ -241,6 +251,8 @@ model usuarios {
   notificaciones   notificaciones[]
   pacientes        pacientes[]
   refresh_tokens   refresh_tokens[]
+
+  @@index([rol, activo], map: "idx_usuarios_rol_activo")
 }
 
 model consentimientos_paciente {
@@ -253,6 +265,8 @@ model consentimientos_paciente {
   fecha_revocacion        DateTime? @db.Timestamp(6)
   documento_firmado       String?
   pacientes               pacientes @relation(fields: [paciente_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([paciente_id], map: "idx_consentimientos_paciente")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

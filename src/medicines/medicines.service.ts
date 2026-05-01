@@ -1,12 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { CreateMedicineInput } from './dto/create-medicine.input';
 import { UpdateMedicineInput } from './dto/update-medicine.input';
 import { Medicine } from './entities/medicine.entity';
 
+interface CacheManager {
+  get<T>(key: string): Promise<T | undefined>;
+  set<T>(key: string, value: T, ttl?: number): Promise<T>;
+  del(key: string): Promise<boolean>;
+}
+
+const CACHE_KEY = (activos: boolean) => `medicines:all:${activos}`;
+const CACHE_TTL = 300_000; // 5 minutos
+
 @Injectable()
 export class MedicinesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cache: CacheManager,
+  ) {}
 
   // ── Medicamentos ─────────────────────────────────────────────────────────────
 
@@ -23,10 +36,20 @@ export class MedicinesService {
         requiere_receta: input.requiereReceta ?? true,
       },
     });
+    await Promise.all([
+      this.cache.del(CACHE_KEY(true)),
+      this.cache.del(CACHE_KEY(false)),
+    ]);
     return this.mapToEntity(med);
   }
 
   async findAll(soloActivos = true, busqueda?: string): Promise<Medicine[]> {
+    const cacheKey = busqueda ? null : CACHE_KEY(soloActivos);
+    if (cacheKey) {
+      const cached = await this.cache.get<Medicine[]>(cacheKey);
+      if (cached) return cached;
+    }
+
     const meds = await this.prisma.medicamentos.findMany({
       where: {
         ...(soloActivos ? { activo: true } : {}),
@@ -51,7 +74,9 @@ export class MedicinesService {
       },
       orderBy: { nombre_comercial: 'asc' },
     });
-    return meds.map((m) => this.mapToEntity(m));
+    const result = meds.map((m) => this.mapToEntity(m));
+    if (cacheKey) await this.cache.set(cacheKey, result, CACHE_TTL);
+    return result;
   }
 
   async findOne(id: number): Promise<Medicine> {
@@ -92,6 +117,10 @@ export class MedicinesService {
         }),
       },
     });
+    await Promise.all([
+      this.cache.del(CACHE_KEY(true)),
+      this.cache.del(CACHE_KEY(false)),
+    ]);
     return this.mapToEntity(updated);
   }
 
@@ -102,6 +131,10 @@ export class MedicinesService {
       where: { id },
       data: { activo: false },
     });
+    await Promise.all([
+      this.cache.del(CACHE_KEY(true)),
+      this.cache.del(CACHE_KEY(false)),
+    ]);
     return this.mapToEntity(deactivated);
   }
 

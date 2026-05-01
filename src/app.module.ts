@@ -27,8 +27,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
+import { AppCacheModule } from './shared/cache/app-cache.module';
 import type { Request } from 'express';
-import { TriageModule } from './triage/triage.module';
 
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { TriageModule } from './triage/triage.module';
      */
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => ([
+      useFactory: (cfg: ConfigService) => [
         {
           name: 'default',
           ttl: cfg.get<number>('THROTTLE_TTL_MS', 60_000),
@@ -54,9 +54,10 @@ import { TriageModule } from './triage/triage.module';
           ttl: 900_000,
           limit: cfg.get<number>('THROTTLE_AUTH_LIMIT', 10),
         },
-      ]),
+      ],
     }),
     EncryptionModule,
+    AppCacheModule,
     RabbitmqModule,
     AuthModule,
     UsersModule,
@@ -101,7 +102,6 @@ import { TriageModule } from './triage/triage.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
-    TriageModule,
   ],
   controllers: [],
   providers: [

@@ -140,18 +140,15 @@ export class AppoinmentsService {
       );
     }
 
-    const paciente = await this.prisma.pacientes.findUnique({
-      where: { id: input.pacienteId },
-    });
+    const [paciente, medico] = await Promise.all([
+      this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } }),
+      this.prisma.medicos.findUnique({ where: { id: input.medicoId } }),
+    ]);
     if (!paciente) {
       throw new NotFoundException(
         `Paciente con ID ${input.pacienteId} no encontrado`,
       );
     }
-
-    const medico = await this.prisma.medicos.findUnique({
-      where: { id: input.medicoId },
-    });
     if (!medico) {
       throw new NotFoundException(
         `Médico con ID ${input.medicoId} no encontrado`,
