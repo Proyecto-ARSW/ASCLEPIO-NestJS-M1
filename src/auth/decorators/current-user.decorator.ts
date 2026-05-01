@@ -1,9 +1,9 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import type { Request } from 'express';
+import type { FastifyRequest } from 'fastify';
 
-type AuthenticatedRequest = Request & { user: JwtPayload };
+type AuthenticatedRequest = FastifyRequest & { user: JwtPayload };
 
 /**
  * Extrae el usuario autenticado del JWT desde contexto REST o GraphQL.

@@ -4,12 +4,11 @@ import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GraphQLModule } from '@nestjs/graphql';
-import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { MercuriusDriver, MercuriusDriverConfig } from '@nestjs/mercurius';
 import { join } from 'node:path';
 import { PatientsModule } from './patients/patients.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { AppoinmentsModule } from './appoinments/appoinments.module';
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { MetricsModule } from './metrics/metrics.module';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
@@ -28,7 +27,6 @@ import { ConfigService } from '@nestjs/config';
 import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 import { AppCacheModule } from './shared/cache/app-cache.module';
-import type { Request } from 'express';
 
 @Module({
   imports: [
@@ -64,19 +62,16 @@ import type { Request } from 'express';
     NotificationsModule,
     TurnModule,
     HospitalsModule,
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
+    GraphQLModule.forRoot<MercuriusDriverConfig>({
+      driver: MercuriusDriver,
       autoSchemaFile:
         process.env.NODE_ENV === 'production'
           ? true
           : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
-      context: ({ req }: { req: Request }) => ({ req }),
-      playground: false,
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      subscriptions: {
-        'graphql-ws': true,
-      },
+      context: (request, reply) => ({ req: request, res: reply }),
+      graphiql: true,
+      subscription: true,
     }),
     PatientsModule,
     DoctorsModule,
