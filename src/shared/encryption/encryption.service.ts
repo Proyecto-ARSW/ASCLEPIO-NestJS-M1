@@ -5,8 +5,15 @@ import {
   createDecipheriv,
   createHmac,
   randomBytes,
-  scryptSync,
+  scrypt,
 } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt) as (
+  password: string,
+  salt: string,
+  keylen: number,
+) => Promise<Buffer>;
 
 /**
  * EncryptionService — Cifrado de campos PHI (Protected Health Information)
@@ -34,7 +41,7 @@ export class EncryptionService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {}
 
-  onModuleInit() {
+  async onModuleInit() {
     const rawKey = this.config.get<string>('FIELD_ENCRYPTION_KEY');
 
     if (!rawKey) {
@@ -51,11 +58,12 @@ export class EncryptionService implements OnModuleInit {
     const salt =
       this.config.get<string>('FIELD_ENCRYPTION_SALT') ?? 'asclepio-v1';
 
-    // scryptSync deriva claves de longitud fija desde una clave arbitraria.
-    // Usamos dos salts distintos para obtener dos claves independientes (AES y HMAC).
-    // scrypt tiene costo computacional alto a propósito — hace los ataques de diccionario lentos.
-    this.aesKey = scryptSync(rawKey, `${salt}-aes`, 32);
-    this.hmacKey = scryptSync(rawKey, `${salt}-hmac`, 32);
+    // Dos salts distintos → dos claves independientes (AES y HMAC).
+    // scrypt es costoso a propósito — ralentiza ataques de diccionario.
+    [this.aesKey, this.hmacKey] = await Promise.all([
+      scryptAsync(rawKey, `${salt}-aes`, 32),
+      scryptAsync(rawKey, `${salt}-hmac`, 32),
+    ]);
     this.enabled = true;
 
     this.logger.log('Cifrado AES-256-GCM para campos PHI ACTIVADO');
