@@ -7,7 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { RolUsuario } from 'src/users/enums/rol-usuario.enum';
 import {
@@ -23,6 +24,12 @@ import { JoinHospitalDto } from './dto/join-hospital.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
 import { EncryptionService } from 'src/shared/encryption/encryption.service';
+
+const scryptAsync = promisify(scrypt) as (
+  password: string,
+  salt: string,
+  keylen: number,
+) => Promise<Buffer>;
 
 @Injectable()
 export class AuthService {
@@ -118,7 +125,7 @@ export class AuthService {
           nombre: dto.nombre,
           apellido: dto.apellido,
           email: dto.email,
-          password_hash: this.hashPassword(dto.password),
+          password_hash: await this.hashPassword(dto.password),
           rol,
           telefono: dto.telefono,
         },
@@ -217,7 +224,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    if (!this.verifyPassword(dto.password, usuario.password_hash)) {
+    if (!(await this.verifyPassword(dto.password, usuario.password_hash))) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -331,16 +338,16 @@ export class AuthService {
 
   // ── HELPERS ───────────────────────────────────────────────────────────────────
 
-  hashPassword(password: string): string {
+  async hashPassword(password: string): Promise<string> {
     const salt = randomBytes(16).toString('hex');
-    const hash = scryptSync(password, salt, 64).toString('hex');
+    const hash = (await scryptAsync(password, salt, 64)).toString('hex');
     return `${salt}:${hash}`;
   }
 
-  verifyPassword(password: string, stored: string): boolean {
+  async verifyPassword(password: string, stored: string): Promise<boolean> {
     const [salt, hash] = stored.split(':');
     try {
-      const derivedHash = scryptSync(password, salt, 64);
+      const derivedHash = await scryptAsync(password, salt, 64);
       return timingSafeEqual(Buffer.from(hash, 'hex'), derivedHash);
     } catch {
       return false;
