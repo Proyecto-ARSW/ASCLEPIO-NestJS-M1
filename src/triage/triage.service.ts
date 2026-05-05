@@ -100,7 +100,7 @@ export class TriageService {
 
   private get isisVoiceBaseUrl(): string {
     return (
-      this.config.get<string>('ISISVOICE_BASE_URL') ?? 'http://localhost:8000'
+      this.config.get<string>('ISISVOICE_BASE_URL')!
     ).replace(/\/$/, '');
   }
 
