@@ -1,6 +1,9 @@
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { TurnoCreadadoWebhookDto } from '../triage-webhook/dto/turno-creado-webhook.dto';
+import { TurnoCanceladoWebhookDto } from '../triage-webhook/dto/turno-cancelado-webhook.dto';
+import { PacienteAtendidoWebhookDto } from '../triage-webhook/dto/paciente-atendido-webhook.dto';
 
 @Injectable()
 export class RabbitmqService implements OnModuleInit {
@@ -119,19 +122,7 @@ export class RabbitmqService implements OnModuleInit {
     }
   }
 
-  private getErrorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : 'Unknown error';
-  }
-
-    notifyTriageTurnoCreado(payload: {
-    turno_id: string;
-    numero_turno: number;
-    hospital_id: number;
-    paciente_id: string;
-    tipo_turno: string;
-    estado: string;
-    fecha: string;
-  }): void {
+  notifyTriageTurnoCreado(payload: TurnoCreadadoWebhookDto): void {
     try {
       this.client
         .emit('notification.triage.turno_creado', payload)
@@ -148,13 +139,7 @@ export class RabbitmqService implements OnModuleInit {
     }
   }
 
-  notifyTriageTurnoCancelado(payload: {
-    turno_id: string;
-    hospital_id: number;
-    paciente_id: string;
-    numero_turno: number;
-    razon: string;
-  }): void {
+  notifyTriageTurnoCancelado(payload: TurnoCanceladoWebhookDto): void {
     try {
       this.client
         .emit('notification.triage.turno_cancelado', payload)
@@ -171,19 +156,7 @@ export class RabbitmqService implements OnModuleInit {
     }
   }
 
-  notifyTriagePacienteAtendido(payload: {
-    turno_id: string;
-    numero_turno: number;
-    hospital_id: number;
-    paciente_id: string;
-    medico_id: string;
-    nivel_triage: number;
-    tiempo_espera_minutos: number;
-    tiempo_atencion_minutos: number;
-    diagnostico: string;
-    tratamiento: string;
-    observaciones?: string;
-  }): void {
+  notifyTriagePacienteAtendido(payload: PacienteAtendidoWebhookDto): void {
     try {
       this.client
         .emit('notification.triage.paciente_atendido', payload)
@@ -198,6 +171,10 @@ export class RabbitmqService implements OnModuleInit {
         `notifyTriagePacienteAtendido error: ${this.getErrorMessage(error)}`,
       );
     }
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : 'Unknown error';
   }
 }
 

@@ -8,6 +8,9 @@ import {
 import { ApiKeyGuard } from '../triage-webhook/guards/api-key.guard';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { EncryptionService } from '../shared/encryption/encryption.service';
+import { SyncService } from './sync.service';
+import { SyncPacienteDto } from './dto/sync-paciente.dto';
+import { SyncIdResponseDto } from './dto/sync-id-response.dto';
 
 @Controller('sync')
 @UseGuards(ApiKeyGuard)
@@ -15,6 +18,7 @@ export class SyncController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService,
+    private readonly syncService: SyncService,
   ) {}
 
   @Get('hospitales')
@@ -61,11 +65,23 @@ export class SyncController {
   }
 
   @Get('pacientes/documento/:cedula')
-  async getPacienteByDocumento(@Param('cedula') cedula: string) {
-    const hmac = this.enc.hmac(cedula);
-    const paciente = await this.prisma.pacientes.findUnique({
-      where: { numero_documento_hmac: hmac },
-    });
+  async getPacienteByDocumento(
+    @Param('cedula') cedula: string,
+  ): Promise<SyncPacienteDto> {
+    let paciente: any;
+
+    if (this.enc.isEnabled()) {
+      const hmac = this.enc.hmac(cedula);
+      paciente = await this.prisma.pacientes.findUnique({
+        where: { numero_documento_hmac: hmac },
+      });
+    } else {
+      // Sin cifrado configurado, numero_documento se guarda en texto plano
+      paciente = await this.prisma.pacientes.findFirst({
+        where: { numero_documento: cedula },
+      });
+    }
+
     if (!paciente) {
       throw new NotFoundException(
         `Paciente con documento ${cedula} no encontrado`,
@@ -75,24 +91,17 @@ export class SyncController {
   }
 
   @Get('pacientes/:id')
-  async getPaciente(@Param('id') id: string) {
+  async getPaciente(@Param('id') id: string): Promise<SyncPacienteDto> {
     const paciente = await this.prisma.pacientes.findUnique({ where: { id } });
     if (!paciente) throw new NotFoundException(`Paciente ${id} no encontrado`);
     return this.mapPaciente(paciente);
   }
 
   @Get('enfermeros/usuario/:usuarioId')
-  async getEnfermeroIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
-    const enfermero = await this.prisma.enfermeros.findFirst({
-      where: { usuario_id: usuarioId },
-      select: { id: true },
-    });
-    if (!enfermero) {
-      throw new NotFoundException(
-        `No existe enfermero asociado al usuario ${usuarioId}`,
-      );
-    }
-    return { id: enfermero.id };
+  async getEnfermeroIdByUsuarioId(
+    @Param('usuarioId') usuarioId: string,
+  ): Promise<SyncIdResponseDto> {
+    return this.syncService.getEnfermeroIdByUsuarioId(usuarioId);
   }
 
   @Get('enfermeros/:id')
@@ -114,17 +123,10 @@ export class SyncController {
   }
 
   @Get('medicos/usuario/:usuarioId')
-  async getMedicoIdByUsuarioId(@Param('usuarioId') usuarioId: string) {
-    const medico = await this.prisma.medicos.findFirst({
-      where: { usuario_id: usuarioId },
-      select: { id: true },
-    });
-    if (!medico) {
-      throw new NotFoundException(
-        `No existe médico asociado al usuario ${usuarioId}`,
-      );
-    }
-    return { id: medico.id };
+  async getMedicoIdByUsuarioId(
+    @Param('usuarioId') usuarioId: string,
+  ): Promise<SyncIdResponseDto> {
+    return this.syncService.getMedicoIdByUsuarioId(usuarioId);
   }
 
   @Get('medicos/:id')
@@ -150,7 +152,7 @@ export class SyncController {
     tipo_documento: string | null;
     eps: string | null;
     alergias: string | null;
-  }) {
+  }): SyncPacienteDto {
     return {
       id: p.id,
       usuario_id: p.usuario_id,

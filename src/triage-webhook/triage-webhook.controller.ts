@@ -3,6 +3,9 @@ import { ApiKeyGuard } from './guards/api-key.guard';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service';
 import { TurnService } from '../turn/turn.service';
 import { TipoTurno } from '../turn/entities/turn.entity';
+import { TurnoCreadadoWebhookDto } from './dto/turno-creado-webhook.dto';
+import { TurnoCanceladoWebhookDto } from './dto/turno-cancelado-webhook.dto';
+import { PacienteAtendidoWebhookDto } from './dto/paciente-atendido-webhook.dto';
 
 @Controller('webhooks/triage')
 @UseGuards(ApiKeyGuard)
@@ -15,18 +18,7 @@ export class TriageWebhookController {
   ) {}
 
   @Post('turno-creado')
-  async handleTurnoCreado(
-    @Body()
-    payload: {
-      turno_id: string;
-      numero_turno: number;
-      hospital_id: number;
-      paciente_id: string;
-      tipo_turno: string;
-      estado: string;
-      fecha: string;
-    },
-  ) {
+  async handleTurnoCreado(@Body() payload: TurnoCreadadoWebhookDto) {
     this.logger.log(
       `Webhook: turno-creado — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
@@ -56,16 +48,7 @@ export class TriageWebhookController {
   }
 
   @Post('turno-cancelado')
-  async handleTurnoCancelado(
-    @Body()
-    payload: {
-      turno_id: string;
-      hospital_id: number;
-      paciente_id: string;
-      numero_turno: number;
-      razon: string;
-    },
-  ) {
+  async handleTurnoCancelado(@Body() payload: TurnoCanceladoWebhookDto) {
     this.logger.log(
       `Webhook: turno-cancelado — Turno #${payload.numero_turno}, Razón: ${payload.razon}`,
     );
@@ -74,22 +57,7 @@ export class TriageWebhookController {
   }
 
   @Post('paciente-atendido')
-  async handlePacienteAtendido(
-    @Body()
-    payload: {
-      turno_id: string;
-      numero_turno: number;
-      hospital_id: number;
-      paciente_id: string;
-      medico_id: string;
-      nivel_triage: number;
-      tiempo_espera_minutos: number;
-      tiempo_atencion_minutos: number;
-      diagnostico: string;
-      tratamiento: string;
-      observaciones?: string;
-    },
-  ) {
+  async handlePacienteAtendido(@Body() payload: PacienteAtendidoWebhookDto) {
     this.logger.log(
       `Webhook: paciente-atendido — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
