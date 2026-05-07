@@ -1,4 +1,4 @@
-export class TurnoCreadadoWebhookDto {
+export class TurnoCreadoWebhookDto {
   turno_id: string;
   numero_turno: number;
   hospital_id: number;
