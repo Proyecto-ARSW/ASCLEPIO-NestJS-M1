@@ -475,7 +475,10 @@ export class TurnService {
 
       const cancelado = await tx.turnos.update({
         where: { id: turno.id },
-        data: { estado: EstadoTurno.CANCELADO },
+        data: {
+          estado: EstadoTurno.CANCELADO,
+          posicion_cola: 0,
+        },
       });
 
       await this.recalcularPosicionesTx(tx, hospitalId, undefined, hoy);
