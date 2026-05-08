@@ -24,6 +24,7 @@ import * as Joi from 'joi';
         // como Application Setting para cumplir Ley 1581/2012 y HIPAA.
         // Generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
         ISISVOICE_BASE_URL: Joi.string().uri().required(),
+        TRIAGE_API_KEY: Joi.string().required(),
         FIELD_ENCRYPTION_KEY: Joi.string().min(32).optional(),
         FIELD_ENCRYPTION_SALT: Joi.string().optional(),
         // Rate limiting: ajustables por entorno sin redeployar código.
