@@ -422,6 +422,7 @@ export class TurnService {
           fecha: hoy,
           estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
         },
+        orderBy: [{ creado_en: 'desc' }, { id: 'desc' }],
       });
 
       if (!turno) return null;
@@ -469,6 +470,7 @@ export class TurnService {
           fecha: hoy,
           estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
         },
+        orderBy: [{ creado_en: 'desc' }, { id: 'desc' }],
       });
 
       if (!turno) return null;

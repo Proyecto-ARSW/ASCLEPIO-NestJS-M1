@@ -122,7 +122,7 @@ export class RabbitmqService implements OnModuleInit {
     }
   }
 
-  notifyTriageTurnoCreado(payload: TurnoCreadadoWebhookDto): void {
+  notifyTriageTurnoCreado(payload: TurnoCreadoWebhookDto): void {
     try {
       this.client
         .emit('notification.triage.turno_creado', payload)

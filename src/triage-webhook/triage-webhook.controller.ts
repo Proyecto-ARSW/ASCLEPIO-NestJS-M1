@@ -4,6 +4,7 @@ import {
   Body,
   Logger,
   UseGuards,
+  ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiKeyGuard } from './guards/api-key.guard';
@@ -30,8 +31,6 @@ export class TriageWebhookController {
       `Webhook: turno-creado — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
 
-    this.rabbitmq.notifyTriageTurnoCreado(payload);
-
     try {
       let tipo: TipoTurno;
       if (payload.tipo_turno === 'URGENCIA') {
@@ -48,10 +47,32 @@ export class TriageWebhookController {
         tipo,
       });
 
+      this.rabbitmq.notifyTriageTurnoCreado(payload);
+
       this.logger.log(
         `Turno de triage ingresado a la cola de M1 — Paciente: ${payload.paciente_id}`,
       );
+
+      return {
+        received: true,
+        event: 'turno-creado',
+        turno_id: payload.turno_id,
+        status: 'created',
+      };
     } catch (error: any) {
+      if (error instanceof ConflictException) {
+        this.logger.warn(
+          `Turno ya existente en M1 para paciente ${payload.paciente_id}; webhook tratado como idempotente`,
+        );
+
+        return {
+          received: true,
+          event: 'turno-creado',
+          turno_id: payload.turno_id,
+          status: 'already_exists',
+        };
+      }
+
       this.logger.error(
         `No se pudo crear turno en M1 desde webhook de triage: ${error?.message}`,
       );
@@ -59,8 +80,6 @@ export class TriageWebhookController {
         'Error al procesar el webhook turno-creado',
       );
     }
-
-    return { received: true, event: 'turno-creado', turno_id: payload.turno_id };
   }
 
   @Post('turno-cancelado')

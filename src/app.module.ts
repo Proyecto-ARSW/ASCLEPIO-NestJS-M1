@@ -30,6 +30,7 @@ import type { Request } from 'express';
 import { TriageModule } from './triage/triage.module';
 import { TriageWebhookModule } from './triage-webhook/triage-webhook.module';
 import { SyncModule } from './sync/sync.module';
+import { join } from 'node:path';
 
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -69,7 +70,9 @@ const isProduction = process.env.NODE_ENV === 'production';
     HospitalsModule,
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: true,
+      autoSchemaFile: isProduction
+        ? true
+        : join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
       context: ({ req }: { req: Request }) => ({ req }),
       playground: false,
