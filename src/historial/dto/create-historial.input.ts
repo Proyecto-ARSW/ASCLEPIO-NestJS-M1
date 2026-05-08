@@ -13,13 +13,11 @@ export class CreateHistorialInput {
   @Field(() => ID, { description: 'ID del médico que crea el registro' })
   medicoId: string;
 
-  @IsOptional()
   @IsUUID()
   @Field(() => ID, {
-    nullable: true,
-    description: 'ID de la cita médica asociada (opcional)',
+    description: 'ID de la cita médica que origina este registro (requerido)',
   })
-  citaId?: string;
+  citaId: string;
 
   @IsOptional()
   @IsString()
@@ -36,3 +34,4 @@ export class CreateHistorialInput {
   @Field({ nullable: true, description: 'Observaciones adicionales' })
   observaciones?: string;
 }
+// Daniel Useche

@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheckService, HealthCheck } from '@nestjs/terminus';
-import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('health')
 export class HealthController {
@@ -13,7 +12,6 @@ export class HealthController {
    * Returns immediately with process-level info and a short-lived cached OK.
    */
   @Get()
-  @SkipThrottle()
   quick() {
     const now = Date.now();
     if (!this.lastFastStatus || now - this.lastFastStatus.ts > 5_000) {
@@ -33,7 +31,6 @@ export class HealthController {
    * Liveness should be cheap too — keep it as a simple process check.
    */
   @Get('liveness')
-  @SkipThrottle()
   liveness() {
     return { status: 'up', uptime: process.uptime() };
   }
@@ -45,7 +42,6 @@ export class HealthController {
    */
   @Get('ready')
   @HealthCheck()
-  @SkipThrottle()
   ready() {
     return this.health.check([]);
   }
