@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../shared/prisma/prisma.service';
 import { CreateHistorialInput } from './dto/create-historial.input';
@@ -25,6 +26,23 @@ export class HistorialService {
     input: CreateHistorialInput,
     hospitalId: number,
   ): Promise<HistorialMedico> {
+    const cita = await this.prisma.citas.findUnique({
+      where: { id: input.citaId },
+    });
+    if (!cita) {
+      throw new NotFoundException(`Cita con ID "${input.citaId}" no encontrada`);
+    }
+    if (cita.paciente_id !== input.pacienteId) {
+      throw new BadRequestException(
+        'La cita no pertenece al paciente indicado',
+      );
+    }
+    if (cita.estado !== 'COMPLETADA') {
+      throw new BadRequestException(
+        'Solo se puede registrar historial sobre una cita COMPLETADA',
+      );
+    }
+
     const historial = await this.prisma.historial_medico.create({
       data: {
         paciente_id: input.pacienteId,

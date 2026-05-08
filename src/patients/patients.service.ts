@@ -57,6 +57,7 @@ export class PatientsService {
 
   async findAll(): Promise<Patient[]> {
     const patients = await this.prisma.pacientes.findMany({
+      where: { usuarios: { activo: true } },
       orderBy: { creado_en: 'desc' },
       include: includeUsuario,
     });
@@ -66,8 +67,8 @@ export class PatientsService {
   }
 
   async findOne(id: string): Promise<Patient> {
-    const patient = await this.prisma.pacientes.findUnique({
-      where: { id },
+    const patient = await this.prisma.pacientes.findFirst({
+      where: { id, usuarios: { activo: true } },
       include: includeUsuario,
     });
 
@@ -85,7 +86,7 @@ export class PatientsService {
    */
   async findByUserId(usuarioId: string): Promise<Patient | null> {
     const patient = await this.prisma.pacientes.findFirst({
-      where: { usuario_id: usuarioId },
+      where: { usuario_id: usuarioId, usuarios: { activo: true } },
       include: includeUsuario,
     });
     return patient ? this.mapToEntity(patient) : null;
@@ -106,8 +107,12 @@ export class PatientsService {
     if (userIds.length === 0) return [];
 
     // Filtramos pacientes cuyo usuario_id esté entre los vinculados al hospital
+    // y cuya cuenta de usuario esté activa
     const patients = await this.prisma.pacientes.findMany({
-      where: { usuario_id: { in: userIds } },
+      where: {
+        usuario_id: { in: userIds },
+        usuarios: { activo: true },
+      },
       orderBy: { creado_en: 'desc' },
       include: includeUsuario,
     });

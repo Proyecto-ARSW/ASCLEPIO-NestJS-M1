@@ -83,4 +83,27 @@ export class UsersResolver {
   ): Promise<User> {
     return this.usersService.remove(id);
   }
+
+  /** Solo ADMIN puede reactivar usuarios desactivados */
+  @Auth(RolUsuario.ADMIN)
+  @Mutation(() => User, {
+    description: 'Reactiva un usuario desactivado. Requiere rol ADMIN.',
+  })
+  activateUser(
+    @Args('id', { type: () => ID, description: 'ID del usuario a reactivar' })
+    id: string,
+  ): Promise<User> {
+    return this.usersService.activate(id);
+  }
+
+  /** Solo ADMIN puede ver todos los usuarios incluyendo inactivos */
+  @Auth(RolUsuario.ADMIN)
+  @Query(() => [User], {
+    name: 'allUsers',
+    description: 'Todos los usuarios incluyendo inactivos. Solo ADMIN.',
+  })
+  findAllAdmin(): Promise<User[]> {
+    return this.usersService.findAllAdmin();
+  }
 }
+// Daniel Useche

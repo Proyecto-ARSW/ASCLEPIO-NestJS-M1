@@ -30,28 +30,30 @@ export class TurnService {
   // ── CREAR TURNO ───────────────────────────────────────────────────────────────
 
   async create(input: CreateTurnInput): Promise<Turno> {
-    const hospital = await this.prisma.hospitales.findUnique({
-      where: { id: input.hospitalId },
-    });
+    const [hospital, paciente, medico, especialidad] = await Promise.all([
+      this.prisma.hospitales.findUnique({ where: { id: input.hospitalId } }),
+      this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } }),
+      input.medicoId
+        ? this.prisma.medicos.findUnique({ where: { id: input.medicoId } })
+        : Promise.resolve(null),
+      input.especialidadId
+        ? this.prisma.especialidades.findUnique({
+            where: { id: input.especialidadId },
+          })
+        : Promise.resolve(null),
+    ]);
+
     if (!hospital || !hospital.activo) {
       throw new NotFoundException(
         `Hospital con ID ${input.hospitalId} no encontrado o inactivo`,
       );
     }
-
-    const paciente = await this.prisma.pacientes.findUnique({
-      where: { id: input.pacienteId },
-    });
     if (!paciente) {
       throw new NotFoundException(
         `Paciente con ID ${input.pacienteId} no encontrado`,
       );
     }
-
     if (input.medicoId) {
-      const medico = await this.prisma.medicos.findUnique({
-        where: { id: input.medicoId },
-      });
       if (!medico) {
         throw new NotFoundException(
           `Médico con ID ${input.medicoId} no encontrado`,
@@ -63,16 +65,10 @@ export class TurnService {
         );
       }
     }
-
-    if (input.especialidadId) {
-      const especialidad = await this.prisma.especialidades.findUnique({
-        where: { id: input.especialidadId },
-      });
-      if (!especialidad) {
-        throw new NotFoundException(
-          `Especialidad con ID ${input.especialidadId} no encontrada`,
-        );
-      }
+    if (input.especialidadId && !especialidad) {
+      throw new NotFoundException(
+        `Especialidad con ID ${input.especialidadId} no encontrada`,
+      );
     }
 
     const hoy = this.today();
@@ -96,26 +92,24 @@ export class TurnService {
             );
           }
 
-          const totalTurnosDia = await tx.turnos.count({
-            where: { hospital_id: input.hospitalId, fecha: hoy },
-          });
-          const ultimoTurno = await tx.turnos.findFirst({
-            where: { hospital_id: input.hospitalId, fecha: hoy },
-            orderBy: { numero_turno: 'desc' },
-            select: { numero_turno: true },
-          });
-          // Regla de negocio: numero diario = total turnos del dia + 1.
-          // Fallback defensivo para evitar choques si existen datos legacy no contiguos.
+          // Una sola aggregate reemplaza count + findFirst, y se paralela con enEspera.
+          const [stats, enEspera] = await Promise.all([
+            tx.turnos.aggregate({
+              where: { hospital_id: input.hospitalId, fecha: hoy },
+              _max: { numero_turno: true },
+              _count: { _all: true },
+            }),
+            tx.turnos.count({
+              where: {
+                hospital_id: input.hospitalId,
+                fecha: hoy,
+                estado: EstadoTurno.EN_ESPERA,
+              },
+            }),
+          ]);
+          // Fallback defensivo para datos legacy no contiguos.
           const numeroTurno =
-            Math.max(totalTurnosDia, ultimoTurno?.numero_turno ?? 0) + 1;
-
-          const enEspera = await tx.turnos.count({
-            where: {
-              hospital_id: input.hospitalId,
-              fecha: hoy,
-              estado: EstadoTurno.EN_ESPERA,
-            },
-          });
+            Math.max(stats._count._all, stats._max.numero_turno ?? 0) + 1;
           const posicionCola = enEspera + 1;
 
           const turno = await tx.turnos.create({
@@ -533,25 +527,45 @@ export class TurnService {
     medicoId?: string,
     fecha?: Date,
   ): Promise<void> {
-    const turnos = await db.turnos.findMany({
-      where: {
-        hospital_id: hospitalId,
-        fecha: fecha ?? this.today(),
-        estado: EstadoTurno.EN_ESPERA,
-        ...(medicoId && { medico_id: medicoId }),
-      },
-      orderBy: [{ tipo: 'desc' }, { numero_turno: 'asc' }],
-      select: { id: true },
-    });
-
-    if (turnos.length === 0) return;
-
-    // Evita SQL raw dinámico para prevenir errores P2010 por dialecto/adaptador.
-    for (const [index, turno] of turnos.entries()) {
-      await db.turnos.update({
-        where: { id: turno.id },
-        data: { posicion_cola: index + 1 },
-      });
+    const fechaFiltro = fecha ?? this.today();
+    // Un solo UPDATE con ROW_NUMBER() reemplaza el loop N+1 de updates secuenciales.
+    if (medicoId) {
+      await db.$executeRaw`
+        UPDATE turnos t
+        SET posicion_cola = ranked.rn
+        FROM (
+          SELECT id,
+                 ROW_NUMBER() OVER (
+                   ORDER BY
+                     CASE tipo WHEN 'URGENTE' THEN 1 WHEN 'PRIORITARIO' THEN 2 ELSE 3 END,
+                     numero_turno
+                 ) AS rn
+          FROM turnos
+          WHERE hospital_id = ${hospitalId}
+            AND fecha = ${fechaFiltro}
+            AND estado = 'EN_ESPERA'
+            AND medico_id = ${medicoId}
+        ) ranked
+        WHERE t.id = ranked.id
+      `;
+    } else {
+      await db.$executeRaw`
+        UPDATE turnos t
+        SET posicion_cola = ranked.rn
+        FROM (
+          SELECT id,
+                 ROW_NUMBER() OVER (
+                   ORDER BY
+                     CASE tipo WHEN 'URGENTE' THEN 1 WHEN 'PRIORITARIO' THEN 2 ELSE 3 END,
+                     numero_turno
+                 ) AS rn
+          FROM turnos
+          WHERE hospital_id = ${hospitalId}
+            AND fecha = ${fechaFiltro}
+            AND estado = 'EN_ESPERA'
+        ) ranked
+        WHERE t.id = ranked.id
+      `;
     }
   }
 

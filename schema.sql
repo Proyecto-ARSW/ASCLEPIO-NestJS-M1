@@ -402,3 +402,44 @@ INSERT INTO hospitales (
     -76.3132,
     TRUE
 );
+
+
+-- =====================================================================
+-- ÍNDICES DE RENDIMIENTO (optimización v2)
+-- Para aplicar sobre una BD existente:
+--   psql -d <db> -f schema_indexes_v2.sql
+-- O ejecutar cada bloque individualmente.
+-- =====================================================================
+
+-- Historial médico: queries frecuentes por paciente/médico ordenados por fecha
+CREATE INDEX IF NOT EXISTS idx_historial_paciente_fecha
+    ON historial_medico(paciente_id, creado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_historial_medico_fecha
+    ON historial_medico(medico_id, creado_en DESC);
+
+-- Recetas: join frecuente desde historial_medico
+CREATE INDEX IF NOT EXISTS idx_recetas_historial
+    ON recetas(historial_id);
+
+-- Consentimientos: búsquedas por paciente
+CREATE INDEX IF NOT EXISTS idx_consentimientos_paciente
+    ON consentimientos_paciente(paciente_id);
+
+-- Médicos: filtrado por especialidad activa (listados de directorio)
+CREATE INDEX IF NOT EXISTS idx_medicos_especialidad_activo
+    ON medicos(especialidad_id, activo);
+
+-- Pacientes: join usuario → paciente (FK sin índice explícito previo)
+CREATE INDEX IF NOT EXISTS idx_pacientes_usuario
+    ON pacientes(usuario_id);
+
+-- Citas: índice compuesto para consultas de disponibilidad (fecha + médico)
+-- El índice parcial (solo citas PENDIENTE/CONFIRMADA) se define por separado
+-- porque la sintaxis WHERE con ENUMs requiere cast explícito en algunos motores.
+CREATE INDEX IF NOT EXISTS idx_citas_activas_fecha
+    ON citas(fecha_hora, medico_id)
+    WHERE estado IN ('PENDIENTE', 'CONFIRMADA');
+
+-- Usuarios: filtrado por rol y estado activo (consultas admin, listados por rol)
+CREATE INDEX IF NOT EXISTS idx_usuarios_rol_activo
+    ON usuarios(rol, activo);
