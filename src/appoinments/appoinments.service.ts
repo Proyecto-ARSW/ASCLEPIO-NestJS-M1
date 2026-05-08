@@ -141,12 +141,20 @@ export class AppoinmentsService {
     }
 
     const [paciente, medico] = await Promise.all([
-      this.prisma.pacientes.findUnique({ where: { id: input.pacienteId } }),
+      this.prisma.pacientes.findUnique({
+        where: { id: input.pacienteId },
+        include: { usuarios: true },
+      }),
       this.prisma.medicos.findUnique({ where: { id: input.medicoId } }),
     ]);
     if (!paciente) {
       throw new NotFoundException(
         `Paciente con ID ${input.pacienteId} no encontrado`,
+      );
+    }
+    if (!paciente.usuarios.activo) {
+      throw new BadRequestException(
+        `El paciente con ID ${input.pacienteId} tiene la cuenta desactivada`,
       );
     }
     if (!medico) {
@@ -977,3 +985,4 @@ export class AppoinmentsService {
     };
   }
 }
+// Daniel Useche

@@ -182,8 +182,8 @@ input CreateEnfermeroDataInput {
 
 """Datos para crear un registro en el historial médico"""
 input CreateHistorialInput {
-  """ID de la cita médica asociada (opcional)"""
-  citaId: ID
+  """ID de la cita médica que origina este registro (requerido)"""
+  citaId: ID!
 
   """Diagnóstico"""
   diagnostico: String
@@ -642,6 +642,12 @@ type Medicine {
 }
 
 type Mutation {
+  """Reactiva un usuario desactivado. Requiere rol ADMIN."""
+  activateUser(
+    """ID del usuario a reactivar"""
+    id: ID!
+  ): User!
+
   """Marcar un turno como completado/atendido"""
   atenderTurno(id: ID!): Turno!
   cancelAppoinment(input: CancelAppoinmentInput!): Appoinment!
@@ -932,6 +938,8 @@ type Patient {
 }
 
 type Query {
+  """Todos los usuarios incluyendo inactivos. Solo ADMIN."""
+  allUsers: [User!]!
   appoinment(id: ID!): Appoinment!
   appoinments: [Appoinment!]!
   appoinmentsByDoctor(fecha: DateTime, medicoId: ID!): [Appoinment!]!
@@ -1021,8 +1029,8 @@ type Query {
     id: ID!
   ): Nurse!
 
-  """Lista todos los enfermeros activos"""
-  nurses: [Nurse!]!
+  """Lista enfermeros activos, opcionalmente filtrados por hospital"""
+  nurses(hospitalId: Int): [Nurse!]!
 
   """Busca un paciente por su ID"""
   patient(
