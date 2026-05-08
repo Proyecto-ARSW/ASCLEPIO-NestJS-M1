@@ -1,9 +1,16 @@
-import { Controller, Post, Body, Logger, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Logger,
+  UseGuards,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { RabbitmqService } from '../rabbitmq/rabbitmq.service';
 import { TurnService } from '../turn/turn.service';
 import { TipoTurno } from '../turn/entities/turn.entity';
-import { TurnoCreadadoWebhookDto } from './dto/turno-creado-webhook.dto';
+import { TurnoCreadoWebhookDto } from './dto/turno-creado-webhook.dto';
 import { TurnoCanceladoWebhookDto } from './dto/turno-cancelado-webhook.dto';
 import { PacienteAtendidoWebhookDto } from './dto/paciente-atendido-webhook.dto';
 
@@ -18,7 +25,7 @@ export class TriageWebhookController {
   ) {}
 
   @Post('turno-creado')
-  async handleTurnoCreado(@Body() payload: TurnoCreadadoWebhookDto) {
+  async handleTurnoCreado(@Body() payload: TurnoCreadoWebhookDto) {
     this.logger.log(
       `Webhook: turno-creado — Turno #${payload.numero_turno}, Paciente: ${payload.paciente_id}`,
     );
@@ -26,8 +33,14 @@ export class TriageWebhookController {
     this.rabbitmq.notifyTriageTurnoCreado(payload);
 
     try {
-      const tipo =
-        payload.tipo_turno === 'URGENCIA' ? TipoTurno.URGENTE : TipoTurno.NORMAL;
+      let tipo: TipoTurno;
+      if (payload.tipo_turno === 'URGENCIA') {
+        tipo = TipoTurno.URGENTE;
+      } else if (payload.tipo_turno === 'PRIORITARIO') {
+        tipo = TipoTurno.PRIORITARIO;
+      } else {
+        tipo = TipoTurno.NORMAL;
+      }
 
       await this.turnService.create({
         pacienteId: payload.paciente_id,
@@ -42,6 +55,9 @@ export class TriageWebhookController {
       this.logger.error(
         `No se pudo crear turno en M1 desde webhook de triage: ${error?.message}`,
       );
+      throw new InternalServerErrorException(
+        'Error al procesar el webhook turno-creado',
+      );
     }
 
     return { received: true, event: 'turno-creado', turno_id: payload.turno_id };
@@ -52,8 +68,27 @@ export class TriageWebhookController {
     this.logger.log(
       `Webhook: turno-cancelado — Turno #${payload.numero_turno}, Razón: ${payload.razon}`,
     );
+
+    try {
+      await this.turnService.cancelarTurnoPorWebhook(
+        payload.paciente_id,
+        payload.hospital_id,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `No se pudo cancelar turno en M1 desde webhook de triage: ${error?.message}`,
+      );
+      throw new InternalServerErrorException(
+        'Error al procesar el webhook turno-cancelado',
+      );
+    }
+
     this.rabbitmq.notifyTriageTurnoCancelado(payload);
-    return { received: true, event: 'turno-cancelado', turno_id: payload.turno_id };
+    return {
+      received: true,
+      event: 'turno-cancelado',
+      turno_id: payload.turno_id,
+    };
   }
 
   @Post('paciente-atendido')
@@ -63,16 +98,23 @@ export class TriageWebhookController {
     );
 
     try {
-      const updated = await this.turnService.marcarTurnoUrgenteAtendido(
+      const updated = await this.turnService.marcarTurnoAtendidoPorWebhook(
         payload.paciente_id,
         payload.hospital_id,
       );
-      this.logger.log(`Turnos URGENTE cerrados en M1: ${updated}`);
+      this.logger.log(`Turnos cerrados en M1: ${updated}`);
     } catch (error: any) {
-      this.logger.error(`Error cerrando turnos URGENTE en M1: ${error?.message}`);
+      this.logger.error(`Error cerrando turnos en M1: ${error?.message}`);
+      throw new InternalServerErrorException(
+        'Error al procesar el webhook paciente-atendido',
+      );
     }
 
     this.rabbitmq.notifyTriagePacienteAtendido(payload);
-    return { received: true, event: 'paciente-atendido', turno_id: payload.turno_id };
+    return {
+      received: true,
+      event: 'paciente-atendido',
+      turno_id: payload.turno_id,
+    };
   }
 }
