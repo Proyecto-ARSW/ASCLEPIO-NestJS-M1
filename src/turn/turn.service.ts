@@ -423,7 +423,11 @@ export class TurnService {
 
       const atendido = await tx.turnos.update({
         where: { id: turno.id },
-        data: { estado: EstadoTurno.ATENDIDO, atendido_en: new Date() },
+        data: {
+          estado: EstadoTurno.ATENDIDO,
+          atendido_en: new Date(),
+          posicion_cola: 0,
+        },
       });
 
       await this.recalcularPosicionesTx(tx, hospitalId, undefined, hoy);
