@@ -81,7 +81,7 @@ async function bootstrap() {
     origin: allowedFrontendOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   });
   app.enableShutdownHooks();
 
