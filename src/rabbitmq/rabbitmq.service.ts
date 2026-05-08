@@ -1,7 +1,7 @@
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { TurnoCreadadoWebhookDto } from '../triage-webhook/dto/turno-creado-webhook.dto';
+import { TurnoCreadoWebhookDto } from '../triage-webhook/dto/turno-creado-webhook.dto';
 import { TurnoCanceladoWebhookDto } from '../triage-webhook/dto/turno-cancelado-webhook.dto';
 import { PacienteAtendidoWebhookDto } from '../triage-webhook/dto/paciente-atendido-webhook.dto';
 
