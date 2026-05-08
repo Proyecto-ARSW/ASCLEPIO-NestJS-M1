@@ -63,8 +63,8 @@ export class DoctorsService {
   }
 
   async findOne(id: string): Promise<Doctor> {
-    const doctor = await this.prisma.medicos.findUnique({
-      where: { id },
+    const doctor = await this.prisma.medicos.findFirst({
+      where: { id, activo: true },
       include: includeUsuario,
     });
 

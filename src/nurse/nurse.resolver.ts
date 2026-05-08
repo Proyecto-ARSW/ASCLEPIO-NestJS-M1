@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { NurseService } from './nurse.service';
 import { Nurse } from './entities/nurse.entity';
 import { CreateNurseInput } from './dto/create-nurse.input';
@@ -31,10 +31,12 @@ export class NurseResolver {
   @Auth()
   @Query(() => [Nurse], {
     name: 'nurses',
-    description: 'Lista todos los enfermeros activos',
+    description: 'Lista enfermeros activos, opcionalmente filtrados por hospital',
   })
-  findAll(): Promise<Nurse[]> {
-    return this.nurseService.findAll();
+  findAll(
+    @Args('hospitalId', { type: () => Int, nullable: true }) hospitalId?: number,
+  ): Promise<Nurse[]> {
+    return this.nurseService.findAll(hospitalId);
   }
 
   @Auth()

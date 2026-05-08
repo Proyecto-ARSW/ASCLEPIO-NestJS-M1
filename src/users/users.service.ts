@@ -242,12 +242,27 @@ export class UsersService {
     return usuarios.map((u) => this.mapToEntity(u));
   }
 
+  async findAllAdmin(): Promise<User[]> {
+    const usuarios = await this.prisma.usuarios.findMany({
+      orderBy: [{ activo: 'desc' }, { creado_en: 'desc' }],
+    });
+    return usuarios.map((u) => this.mapToEntity(u));
+  }
+
   async findOne(id: string): Promise<User> {
+    const usuario = await this.prisma.usuarios.findUnique({ where: { id } });
+    if (!usuario || !usuario.activo) {
+      throw new NotFoundException(`Usuario con ID "${id}" no encontrado`);
+    }
+    return this.mapToEntity(usuario);
+  }
+
+  private async findOneAdmin(id: string) {
     const usuario = await this.prisma.usuarios.findUnique({ where: { id } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID "${id}" no encontrado`);
     }
-    return this.mapToEntity(usuario);
+    return usuario;
   }
 
   async findByEmail(email: string) {
@@ -255,21 +270,127 @@ export class UsersService {
   }
 
   async update(id: string, input: UpdateUserInput): Promise<User> {
-    await this.findOne(id);
-    const updated = await this.prisma.usuarios.update({
-      where: { id },
-      data: {
-        ...(input.nombre && { nombre: input.nombre }),
-        ...(input.apellido && { apellido: input.apellido }),
-        ...(input.telefono !== undefined && { telefono: input.telefono }),
-        ...(input.rol && { rol: input.rol }),
-      },
+    const current = await this.findOneAdmin(id);
+    const rolCambia = !!(input.rol && input.rol !== current.rol);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // 1. Borrar perfil del rol anterior cuando el rol cambia
+      if (rolCambia) {
+        if (current.rol === RolUsuario.MEDICO)
+          await tx.medicos.deleteMany({ where: { usuario_id: id } });
+        if (current.rol === RolUsuario.ENFERMERO)
+          await tx.enfermeros.deleteMany({ where: { usuario_id: id } });
+        if (current.rol === RolUsuario.PACIENTE)
+          await tx.pacientes.deleteMany({ where: { usuario_id: id } });
+      }
+
+      // 2. Actualizar campos base del usuario
+      const usuario = await tx.usuarios.update({
+        where: { id },
+        data: {
+          ...(input.nombre && { nombre: input.nombre }),
+          ...(input.apellido && { apellido: input.apellido }),
+          ...(input.telefono !== undefined && { telefono: input.telefono }),
+          ...(input.rol && { rol: input.rol }),
+        },
+      });
+
+      // 3a. Crear perfil nuevo cuando el rol cambió y el input trae datos
+      if (rolCambia) {
+        const newRol = input.rol!;
+        if (newRol === RolUsuario.MEDICO && input.medicoData) {
+          await tx.medicos.create({
+            data: {
+              usuario_id: id,
+              especialidad_id: input.medicoData.especialidadId,
+              numero_registro: input.medicoData.numeroRegistro,
+              consultorio: input.medicoData.consultorio,
+            },
+          });
+        }
+        if (newRol === RolUsuario.ENFERMERO && input.enfermeroData) {
+          await tx.enfermeros.create({
+            data: {
+              usuario_id: id,
+              numero_registro: input.enfermeroData.numeroRegistro,
+              nivel_formacion: input.enfermeroData.nivelFormacion!,
+              area_especializacion: input.enfermeroData.areaEspecializacion!,
+              certificacion_triage: input.enfermeroData.certificacionTriage ?? false,
+              fecha_certificacion: input.enfermeroData.fechaCertificacion,
+            },
+          });
+        }
+        if (newRol === RolUsuario.PACIENTE && input.pacienteData) {
+          await tx.pacientes.create({
+            data: {
+              usuario_id: id,
+              fecha_nacimiento: input.pacienteData.fechaNacimiento,
+              tipo_sangre: this.enc.encryptOrNull(input.pacienteData.tipoSangre),
+              numero_documento: this.enc.encryptOrNull(
+                input.pacienteData.numeroDocumento,
+              ),
+              numero_documento_hmac: this.enc.hmacOrNull(
+                input.pacienteData.numeroDocumento,
+              ),
+              tipo_documento: input.pacienteData.tipoDocumento ?? 'CC',
+              eps: input.pacienteData.eps,
+              alergias: this.enc.encryptOrNull(input.pacienteData.alergias),
+            },
+          });
+        }
+      }
+
+      // 3b. Actualizar perfil existente cuando el rol NO cambió
+      if (!rolCambia) {
+        if (input.medicoData) {
+          await tx.medicos.updateMany({
+            where: { usuario_id: id },
+            data: {
+              especialidad_id: input.medicoData.especialidadId,
+              numero_registro: input.medicoData.numeroRegistro,
+              ...(input.medicoData.consultorio !== undefined && {
+                consultorio: input.medicoData.consultorio,
+              }),
+            },
+          });
+        }
+        if (input.enfermeroData) {
+          await tx.enfermeros.updateMany({
+            where: { usuario_id: id },
+            data: {
+              numero_registro: input.enfermeroData.numeroRegistro,
+              nivel_formacion: input.enfermeroData.nivelFormacion!,
+              ...(input.enfermeroData.areaEspecializacion && {
+                area_especializacion: input.enfermeroData.areaEspecializacion,
+              }),
+              ...(input.enfermeroData.certificacionTriage !== undefined && {
+                certificacion_triage: input.enfermeroData.certificacionTriage,
+              }),
+            },
+          });
+        }
+      }
+
+      return usuario;
     });
+
     return this.mapToEntity(updated);
   }
 
+  async activate(id: string): Promise<User> {
+    const usuario = await this.findOneAdmin(id);
+    if (usuario.activo) {
+      throw new BadRequestException(`El usuario con ID "${id}" ya está activo`);
+    }
+    const activated = await this.prisma.usuarios.update({
+      where: { id },
+      data: { activo: true },
+    });
+    return this.mapToEntity(activated);
+  }
+
   async remove(id: string): Promise<User> {
-    await this.findOne(id);
+    await this.findOneAdmin(id);
     const deactivated = await this.prisma.usuarios.update({
       where: { id },
       data: { activo: false },
@@ -305,3 +426,4 @@ export class UsersService {
     };
   }
 }
+// Daniel Useche
