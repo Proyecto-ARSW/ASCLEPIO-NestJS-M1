@@ -20,6 +20,6 @@ import { TurnResolver } from './turn.resolver';
       useValue: new PubSub(),
     },
   ],
-  exports : [TurnService],
+  exports: [TurnService],
 })
 export class TurnModule {}
