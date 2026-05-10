@@ -1,6 +1,9 @@
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { TurnoCreadoWebhookDto } from '../triage-webhook/dto/turno-creado-webhook.dto';
+import { TurnoCanceladoWebhookDto } from '../triage-webhook/dto/turno-cancelado-webhook.dto';
+import { PacienteAtendidoWebhookDto } from '../triage-webhook/dto/paciente-atendido-webhook.dto';
 
 @Injectable()
 export class RabbitmqService implements OnModuleInit {
@@ -115,6 +118,57 @@ export class RabbitmqService implements OnModuleInit {
     } catch (error: unknown) {
       this.logger.error(
         `notifyUserRegistered error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  notifyTriageTurnoCreado(payload: TurnoCreadoWebhookDto): void {
+    try {
+      this.client
+        .emit('notification.triage.turno_creado', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.turno_creado: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriageTurnoCreado error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  notifyTriageTurnoCancelado(payload: TurnoCanceladoWebhookDto): void {
+    try {
+      this.client
+        .emit('notification.triage.turno_cancelado', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.turno_cancelado: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriageTurnoCancelado error: ${this.getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  notifyTriagePacienteAtendido(payload: PacienteAtendidoWebhookDto): void {
+    try {
+      this.client
+        .emit('notification.triage.paciente_atendido', payload)
+        .subscribe({
+          error: (error: unknown) =>
+            this.logger.error(
+              `Failed to emit triage.paciente_atendido: ${this.getErrorMessage(error)}`,
+            ),
+        });
+    } catch (error: unknown) {
+      this.logger.error(
+        `notifyTriagePacienteAtendido error: ${this.getErrorMessage(error)}`,
       );
     }
   }

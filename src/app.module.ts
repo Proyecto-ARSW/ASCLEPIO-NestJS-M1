@@ -22,6 +22,11 @@ import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 import { EncryptionModule } from './shared/encryption/encryption.module';
+import type { Request } from 'express';
+import { TriageWebhookModule } from './triage-webhook/triage-webhook.module';
+import { SyncModule } from './sync/sync.module';
+
+const isProduction = process.env.NODE_ENV === 'production';
 import { AppCacheModule } from './shared/cache/app-cache.module';
 
 @Module({
@@ -55,10 +60,7 @@ import { AppCacheModule } from './shared/cache/app-cache.module';
         // pino-pretty solo en desarrollo: formatea logs de forma legible para el
         // desarrollador. En producción se omite para emitir JSON estructurado puro,
         // que Azure Monitor / Application Insights pueden ingestar directamente.
-        transport:
-          process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty' }
-            : undefined,
+        transport: isProduction ? undefined : { target: 'pino-pretty' },
         // En producción, nivel info es suficiente. debug añade demasiado ruido.
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         autoLogging: {
@@ -76,6 +78,8 @@ import { AppCacheModule } from './shared/cache/app-cache.module';
     HistorialModule,
     RecetasModule,
     ConsentimientosModule,
+    TriageWebhookModule,
+    SyncModule,
   ],
   controllers: [],
   providers: [],
