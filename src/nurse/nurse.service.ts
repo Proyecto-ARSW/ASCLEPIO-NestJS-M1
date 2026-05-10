@@ -39,9 +39,18 @@ export class NurseService {
     return this.mapToEntity(enfermero);
   }
 
-  async findAll(): Promise<Nurse[]> {
+  async findAll(hospitalId?: number): Promise<Nurse[]> {
     const enfermeros = await this.prisma.enfermeros.findMany({
-      where: { activo: true },
+      where: {
+        activo: true,
+        ...(hospitalId
+          ? {
+              usuarios: {
+                hospital_usuario: { some: { hospital_id: hospitalId } },
+              },
+            }
+          : {}),
+      },
       orderBy: { creado_en: 'desc' },
       include: includeUsuario,
     });
@@ -49,8 +58,8 @@ export class NurseService {
   }
 
   async findOne(id: string): Promise<Nurse> {
-    const enfermero = await this.prisma.enfermeros.findUnique({
-      where: { id },
+    const enfermero = await this.prisma.enfermeros.findFirst({
+      where: { id, activo: true },
       include: includeUsuario,
     });
     if (!enfermero) {

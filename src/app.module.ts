@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModuleCustom } from './conf/config.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -22,38 +21,12 @@ import { HistorialModule } from './historial/historial.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { ConsentimientosModule } from './consentimientos/consentimientos.module';
 import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { ConfigService } from '@nestjs/config';
-import { AppThrottlerGuard } from './shared/guards/app-throttler.guard';
 import { EncryptionModule } from './shared/encryption/encryption.module';
 import { AppCacheModule } from './shared/cache/app-cache.module';
 
 @Module({
   imports: [
     ConfigModuleCustom,
-    /**
-     * ThrottlerModule limita la cantidad de requests por IP en una ventana de tiempo.
-     * Se definen dos perfiles:
-     * - "default": THROTTLE_LIMIT req / THROTTLE_TTL_MS ms por IP (default 200/60s)
-     * - "auth": THROTTLE_AUTH_LIMIT req / 15 min — login/register, frena brute-force
-     * El ThrottlerGuard registrado como APP_GUARD aplica el perfil "default" a
-     * todos los endpoints; los endpoints críticos sobreescriben con @Throttle({ auth: ... })
-     */
-    ThrottlerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => [
-        {
-          name: 'default',
-          ttl: cfg.get<number>('THROTTLE_TTL_MS', 60_000),
-          limit: cfg.get<number>('THROTTLE_LIMIT', 200),
-        },
-        {
-          name: 'auth',
-          ttl: 900_000,
-          limit: cfg.get<number>('THROTTLE_AUTH_LIMIT', 10),
-        },
-      ],
-    }),
     EncryptionModule,
     AppCacheModule,
     RabbitmqModule,
@@ -105,12 +78,7 @@ import { AppCacheModule } from './shared/cache/app-cache.module';
     ConsentimientosModule,
   ],
   controllers: [],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: AppThrottlerGuard,
-    },
-  ],
+  providers: [],
 })
 export class AppModule {}
 
