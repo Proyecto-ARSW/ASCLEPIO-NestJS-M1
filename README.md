@@ -34,7 +34,7 @@ Este backend combina **REST + GraphQL + Subscriptions + mensajería asíncrona**
 ## Características principales
 
 - Arquitectura modular por dominio: auth, users, patients, doctors, appoinments, triage, turn, inventario, medicines, historial, recetas, notifications.
-- API híbrida: endpoints REST documentados en Swagger y operaciones GraphQL con schema auto-generado.
+- API híbrida: endpoints REST documentados en Swagger y operaciones GraphQL con schema auto-generado; en desarrollo se persiste en `src/schema.gql` para tooling y documentación.
 - Tiempo real con GraphQL Subscriptions (`graphql-ws`) para eventos clínicos y de turnos.
 - Seguridad robusta: JWT por hospital, `helmet`, validación global, `throttling` por tipo de tráfico y filtros de errores.
 - Integración con RabbitMQ para notificaciones/eventos desacoplados y resilientes.
@@ -279,6 +279,8 @@ pnpm exec prisma db push
 ```bash
 pnpm run start:dev
 ```
+
+En desarrollo, Nest actualiza automáticamente `src/schema.gql` cuando cambia el schema GraphQL. En producción, el schema se mantiene en memoria y no se reescribe ese archivo.
 
 ## Endpoints y accesos útiles
 

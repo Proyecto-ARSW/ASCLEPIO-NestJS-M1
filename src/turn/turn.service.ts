@@ -400,6 +400,109 @@ export class TurnService {
     return this.mapToEntity(turno);
   }
 
+  async marcarTurnoAtendidoPorWebhook(
+    pacienteId: string,
+    hospitalId: number,
+  ): Promise<number> {
+    const hoy = this.today();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.acquireQueueLock(tx, hospitalId, hoy);
+
+      const turno = await tx.turnos.findFirst({
+        where: {
+          paciente_id: pacienteId,
+          hospital_id: hospitalId,
+          fecha: hoy,
+          estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
+        },
+        orderBy: [{ creado_en: 'desc' }, { id: 'desc' }],
+      });
+
+      if (!turno) return null;
+
+      const atendido = await tx.turnos.update({
+        where: { id: turno.id },
+        data: {
+          estado: EstadoTurno.ATENDIDO,
+          atendido_en: new Date(),
+          posicion_cola: 0,
+        },
+      });
+
+      await this.recalcularPosicionesTx(tx, hospitalId, undefined, hoy);
+
+      return atendido;
+    });
+
+    if (updated) {
+      const entity = this.mapToEntity(updated);
+      await this.pubSub.publish(CANAL_TURNO_HOSPITAL(hospitalId), {
+        turnoActualizado: { tipo: 'ATENDIDO', turno: entity },
+      });
+      await this.pubSub.publish(CANAL_TURNO_PACIENTE(pacienteId), {
+        miTurnoActualizado: {
+          tipo: 'ATENDIDO',
+          turno: entity,
+          mensaje: 'Tu atención ha concluido. ¡Que te vaya bien!',
+        },
+      });
+      return 1;
+    }
+    return 0;
+  }
+
+  async cancelarTurnoPorWebhook(
+    pacienteId: string,
+    hospitalId: number,
+  ): Promise<number> {
+    const hoy = this.today();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.acquireQueueLock(tx, hospitalId, hoy);
+
+      const turno = await tx.turnos.findFirst({
+        where: {
+          paciente_id: pacienteId,
+          hospital_id: hospitalId,
+          fecha: hoy,
+          estado: { in: [EstadoTurno.EN_ESPERA, EstadoTurno.EN_CONSULTA] },
+        },
+        orderBy: [{ creado_en: 'desc' }, { id: 'desc' }],
+      });
+
+      if (!turno) return null;
+
+      const cancelado = await tx.turnos.update({
+        where: { id: turno.id },
+        data: {
+          estado: EstadoTurno.CANCELADO,
+          posicion_cola: 0,
+        },
+      });
+
+      await this.recalcularPosicionesTx(tx, hospitalId, undefined, hoy);
+
+      return cancelado;
+    });
+
+    if (updated) {
+      const entity = this.mapToEntity(updated);
+      await this.pubSub.publish(CANAL_TURNO_HOSPITAL(hospitalId), {
+        turnoActualizado: { tipo: 'CANCELADO', turno: entity },
+      });
+      await this.pubSub.publish(CANAL_TURNO_PACIENTE(pacienteId), {
+        miTurnoActualizado: {
+          tipo: 'CANCELADO',
+          turno: entity,
+          mensaje: 'Tu turno fue cancelado.',
+        },
+      });
+      return 1;
+    }
+    return 0;
+  }
+
   async contarEnEspera(hospitalId: number, medicoId?: string): Promise<number> {
     return this.prisma.turnos.count({
       where: {
