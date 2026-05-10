@@ -49,6 +49,194 @@ Este backend combina **REST + GraphQL + Subscriptions + mensajería asíncrona**
 - Escalable desde MVP hasta operación enterprise: separación por contextos de negocio y telemetría lista desde el día uno.
 - Preparado para equipos multidisciplinarios: frontend, backend y analítica pueden trabajar en paralelo sin fricción.
 
+## Diagramas Asclepio M1 en Mermaid
+
+### Diagrama 1 Contexto de plataforma
+
+```mermaid
+flowchart TB
+  WebCliente[Web Cliente]
+  MovilCliente[Movil Cliente]
+  EquipoClinico[Equipo Clinico]
+  ApiNest[API Nest Fastify]
+  PostgreSQL[PostgreSQL]
+  RabbitMQ[RabbitMQ]
+  Prometheus[Prometheus]
+  Grafana[Grafana]
+
+  WebCliente --> ApiNest
+  MovilCliente --> ApiNest
+  EquipoClinico --> ApiNest
+  ApiNest --> PostgreSQL
+  ApiNest --> RabbitMQ
+  ApiNest --> Prometheus
+  Prometheus --> Grafana
+```
+
+### Diagrama 2 Mapa modular de dominio
+
+```mermaid
+flowchart LR
+  AppModule[App Module]
+  Auth[Auth]
+  Users[Users]
+  Patients[Patients]
+  Doctors[Doctors]
+  Appoinments[Appoinments]
+  Turn[Turn]
+  Nurse[Nurse]
+  Historial[Historial]
+  Recetas[Recetas]
+  Medicines[Medicines]
+  Inventario[Inventario]
+  Consentimientos[Consentimientos]
+  Hospitals[Hospitals]
+  Notifications[Notifications]
+  Rabbitmq[Rabbitmq]
+  Metrics[Metrics]
+  Health[Health]
+
+  AppModule --> Auth
+  AppModule --> Users
+  AppModule --> Patients
+  AppModule --> Doctors
+  AppModule --> Appoinments
+  AppModule --> Turn
+  AppModule --> Nurse
+  AppModule --> Historial
+  AppModule --> Recetas
+  AppModule --> Medicines
+  AppModule --> Inventario
+  AppModule --> Consentimientos
+  AppModule --> Hospitals
+  AppModule --> Notifications
+  AppModule --> Rabbitmq
+  AppModule --> Metrics
+  AppModule --> Health
+```
+
+### Diagrama 3 Arranque de la aplicacion
+
+```mermaid
+sequenceDiagram
+  participant Boot as Bootstrap
+  participant Nest as NestFactory
+  participant Fastify as FastifyAdapter
+  participant Config as ConfigService
+  participant Helmet as FastifyHelmet
+  participant Swagger as Swagger
+  participant Server as HttpServer
+
+  Boot->>Nest: create AppModule
+  Nest->>Fastify: init adapter trustProxy 1
+  Boot->>Config: read PORT and FRONTEND_URL
+  Boot->>Helmet: register security headers
+  Boot->>Swagger: setup docs
+  Boot->>Server: enable cors and shutdown hooks
+  Boot->>Server: listen on port
+```
+
+### Diagrama 4 Flujo de autenticacion JWT
+
+```mermaid
+flowchart TD
+  Solicitud[Solicitud de login]
+  AuthController[Auth Controller]
+  AuthService[Auth Service]
+  UsersModule[Users Module]
+  HospitalScope[Hospital Scope]
+  JwtIssue[Emision de token]
+  Respuesta[Respuesta segura]
+
+  Solicitud --> AuthController
+  AuthController --> AuthService
+  AuthService --> UsersModule
+  UsersModule --> HospitalScope
+  HospitalScope --> JwtIssue
+  JwtIssue --> Respuesta
+```
+
+### Diagrama 5 Flujo de citas y turnos
+
+```mermaid
+flowchart LR
+  Paciente[Paciente]
+  ModuloCitas[Appoinments Module]
+  ModuloTurno[Turn Module]
+  Medico[Doctor Module]
+  Triage[Triage Nurse]
+  HistorialClinico[Historial Module]
+  Notificacion[Notifications Module]
+
+  Paciente --> ModuloCitas
+  ModuloCitas --> ModuloTurno
+  ModuloTurno --> Medico
+  ModuloTurno --> Triage
+  ModuloTurno --> HistorialClinico
+  ModuloTurno --> Notificacion
+```
+
+### Diagrama 6 Eventos asincronos con RabbitMQ
+
+```mermaid
+sequenceDiagram
+  participant Domain as Domain Service
+  participant Publisher as Event Publisher
+  participant Broker as RabbitMQ
+  participant Consumer as Notification Consumer
+  participant Channel as Realtime Channel
+
+  Domain->>Publisher: create event
+  Publisher->>Broker: publish message
+  Broker->>Consumer: deliver message
+  Consumer->>Channel: push notification
+```
+
+### Diagrama 7 Cadena de seguridad y control
+
+```mermaid
+flowchart TD
+  Cliente[Cliente]
+  Throttler[AppThrottlerGuard]
+  Validation[ValidationPipe]
+  JwtGuard[Jwt Guard]
+  RolesGuard[Roles Guard]
+  PrismaFilter[PrismaExceptionFilter]
+  Controller[Controller]
+  Service[Service]
+  Database[PostgreSQL]
+
+  Cliente --> Throttler
+  Throttler --> Validation
+  Validation --> JwtGuard
+  JwtGuard --> RolesGuard
+  RolesGuard --> Controller
+  Controller --> Service
+  Service --> Database
+  Service --> PrismaFilter
+```
+
+### Diagrama 8 Observabilidad operacional
+
+```mermaid
+flowchart TB
+  Api[API Nest]
+  Logger[Pino Logger]
+  EndpointHealth[Health Endpoint]
+  EndpointMetrics[Metrics Endpoint]
+  PrometheusSvc[Prometheus Service]
+  GrafanaDash[Grafana Dashboard]
+  EquipoOps[Equipo Operaciones]
+
+  Api --> Logger
+  Api --> EndpointHealth
+  Api --> EndpointMetrics
+  EndpointMetrics --> PrometheusSvc
+  PrometheusSvc --> GrafanaDash
+  EndpointHealth --> EquipoOps
+  GrafanaDash --> EquipoOps
+```
+
 ## Inicio rápido (Local)
 
 ### 1) Prerrequisitos
